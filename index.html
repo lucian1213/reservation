@@ -226,29 +226,39 @@
             return new Date(2025, 1, 1).getDay();
         }
 
-        function showTimeSlots() {
-            const timeSlotsDiv = document.querySelector('.time-slots');
-            timeSlotsDiv.style.display = 'grid';
-            timeSlotsDiv.innerHTML = '';
-            
-            timeSlots.forEach(time => {
-                const slot = document.createElement('div');
-                slot.className = 'time-slot';
-                if (isTimeSlotBooked(selectedDate, time)) {
-                    slot.classList.add('booked');
-                    slot.textContent = `${time} (예약됨)`;
-                } else {
-                    slot.textContent = time;
-                    slot.onclick = () => showModal(time);
-                }
-                timeSlotsDiv.appendChild(slot);
-            });
+        async function showTimeSlots() {
+    const timeSlotsDiv = document.querySelector('.time-slots');
+    timeSlotsDiv.style.display = 'grid';
+    timeSlotsDiv.innerHTML = '';
+    
+    for (const time of timeSlots) {
+        const slot = document.createElement('div');
+        slot.className = 'time-slot';
+        
+        const isBooked = await isTimeSlotBooked(selectedDate, time);
+        
+        if (isBooked) {
+            slot.classList.add('booked');
+            slot.textContent = `${time} (예약됨)`;
+        } else {
+            slot.textContent = time;
+            slot.onclick = () => showModal(time);
         }
+        timeSlotsDiv.appendChild(slot);
+    }
+}
 
-        function isTimeSlotBooked(date, time) {
-            const dateKey = `2025-02-${date}`;
-            return reservations[dateKey]?.[time] !== undefined;
-        }
+async function isTimeSlotBooked(date, time) {
+    const dateTimeKey = `2025-02-${date}-${time}`;
+    
+    try {
+        const doc = await db.collection('reservations').doc(dateTimeKey).get();
+        return doc.exists;
+    } catch (error) {
+        console.error('Error checking time slot:', error);
+        return true; // 에러 발생 시 예약됨으로 처리
+    }
+}
 
         function showModal(time) {
             selectedTime = time;
@@ -261,39 +271,63 @@
             document.getElementById('phoneInput').value = '';
         }
 
-        async function makeReservation() {
-            const name = document.getElementById('nameInput').value;
-            const phone = document.getElementById('phoneInput').value;
+       async function makeReservation() {
+    const name = document.getElementById('nameInput').value;
+    const phone = document.getElementById('phoneInput').value;
+    const dateKey = `2025-02-${selectedDate}`;
+    const dateTimeKey = `${dateKey}-${selectedTime}`;
 
-            if (!name || !phone) {
-                alert('모든 정보를 입력해주세요.');
-                return;
+    if (!name || !phone) {
+        alert('모든 정보를 입력해주세요.');
+        return;
+    }
+
+    try {
+        // 1. 먼저 대기열에 등록
+        const queueRef = await db.collection('queue').add({
+            dateTime: dateTimeKey,
+            name: name,
+            phone: phone,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 2. 트랜잭션으로 예약 처리
+        await db.runTransaction(async (transaction) => {
+            // 예약 문서 참조
+            const reservationRef = db.collection('reservations').doc(dateTimeKey);
+            const reservationDoc = await transaction.get(reservationRef);
+
+            // 이미 예약이 있는지 확인
+            if (reservationDoc.exists) {
+                // 대기열에서 제거하고 에러 발생
+                await queueRef.delete();
+                throw new Error('이미 예약된 시간입니다.');
             }
 
-            const dateKey = `2025-02-${selectedDate}`;
-            
-            try {
-                await db.collection('reservations').add({
-                    date: dateKey,
-                    time: selectedTime,
-                    name: name,
-                    phone: phone,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+            // 예약 생성
+            transaction.set(reservationRef, {
+                date: dateKey,
+                time: selectedTime,
+                name: name,
+                phone: phone,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        });
 
-                if (!reservations[dateKey]) {
-                    reservations[dateKey] = {};
-                }
-                reservations[dateKey][selectedTime] = { name, phone };
+        // 3. 성공적으로 예약되면 대기열에서 제거
+        await queueRef.delete();
 
-                closeModal();
-                showTimeSlots();
-                alert('예약이 완료되었습니다!');
-            } catch (error) {
-                alert('예약 중 오류가 발생했습니다. 다시 시도해주세요.');
-                console.error('Error:', error);
-            }
-        }
+        closeModal();
+        showTimeSlots();
+        alert('예약이 완료되었습니다!');
+
+    } catch (error) {
+        // 에러 발생 시 대기열에서 제거
+        console.error('Error:', error);
+        alert(error.message || '예약 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
+}
+
 
         async function loadReservations() {
             try {
