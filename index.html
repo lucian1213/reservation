@@ -1,181 +1,315 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2월 예약 시스템</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
 
-const FebruaryReservation = () => {
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [reservations, setReservations] = useState({});
+        body {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
 
-  // 2월 달력 데이터 생성
-  const generateFebruaryDays = () => {
-    const days = [];
-    const firstDay = new Date(2024, 1, 1).getDay(); // 2월 1일의 요일
-    
-    // 빈 칸 추가
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-    
-    // 2월 날짜 추가
-    for (let i = 1; i <= 29; i++) { // 2024년은 윤년
-      days.push(i);
-    }
-    
-    return days;
-  };
+        .calendar-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
 
-  // 시간대 생성 (10:00 ~ 20:00, 1시간 간격)
-  const timeSlots = Array.from({ length: 11 }, (_, i) => {
-    const hour = i + 10;
-    return `${hour.toString().padStart(2, '0')}:00`;
-  });
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
 
-  // 예약 처리
-  const handleReservation = () => {
-    if (!selectedDate || !selectedTime || !name || !phone) return;
+        .calendar-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
 
-    const dateKey = `2024-02-${selectedDate}`;
-    const newReservations = {
-      ...reservations,
-      [dateKey]: {
-        ...(reservations[dateKey] || {}),
-        [selectedTime]: { name, phone }
-      }
-    };
+        .weekday {
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+        }
 
-    setReservations(newReservations);
-    setSelectedTime(null);
-    setName('');
-    setPhone('');
-  };
+        .day {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            background: white;
+        }
 
-  // 날짜별 예약 가능 여부 확인
-  const isTimeSlotAvailable = (time) => {
-    const dateKey = `2024-02-${selectedDate}`;
-    return !reservations[dateKey]?.[time];
-  };
+        .day:hover {
+            background: #f0f0f0;
+        }
 
-  return (
-    <div className="max-w-4xl mx-auto p-4">
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>2024년 2월 예약</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* 달력 */}
-          <div className="grid grid-cols-7 gap-2 mb-6">
-            {['일', '월', '화', '수', '목', '금', '토'].map(day => (
-              <div key={day} className="text-center font-bold py-2">{day}</div>
-            ))}
-            {generateFebruaryDays().map((day, index) => (
-              <div key={index} className="aspect-square">
-                {day && (
-                  <Button
-                    variant={selectedDate === day ? "default" : "outline"}
-                    className="w-full h-full"
-                    onClick={() => setSelectedDate(day)}
-                  >
-                    {day}
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
+        .day.selected {
+            background: #007bff;
+            color: white;
+        }
 
-          {/* 시간대 선택 */}
-          {selectedDate && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">2월 {selectedDate}일 예약 가능 시간</h3>
-              <div className="grid grid-cols-4 gap-2">
-                {timeSlots.map(time => (
-                  <AlertDialog key={time}>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant={selectedTime === time ? "default" : "outline"}
-                        className="w-full"
-                        disabled={!isTimeSlotAvailable(time)}
-                      >
-                        {time}
-                        {!isTimeSlotAvailable(time) && " (예약됨)"}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          2월 {selectedDate}일 {time} 예약
-                        </AlertDialogTitle>
-                      </AlertDialogHeader>
-                      <div className="space-y-4 mt-4">
-                        <div>
-                          <Label htmlFor="name">예약자 성함</Label>
-                          <Input
-                            id="name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="홍길동"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="phone">연락처</Label>
-                          <Input
-                            id="phone"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="010-0000-0000"
-                          />
-                        </div>
-                        <Button 
-                          className="w-full"
-                          onClick={() => {
-                            setSelectedTime(time);
-                            handleReservation();
-                          }}
-                        >
-                          예약하기
-                        </Button>
-                      </div>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
 
-      {/* 예약 현황 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>예약 현황</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {Object.entries(reservations).map(([date, timeSlots]) => (
-              Object.entries(timeSlots).map(([time, details]) => (
-                <div key={`${date}-${time}`} className="p-4 border rounded-lg">
-                  <div className="font-medium">
-                    {date.split('-')[2]}일 {time}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    예약자: {details.name}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    연락처: {details.phone}
-                  </div>
-                </div>
-              ))
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        .time-slot {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+            cursor: pointer;
+            background: white;
+        }
+
+        .time-slot:hover {
+            background: #f0f0f0;
+        }
+
+        .time-slot.booked {
+            background: #ffebe6;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .reservations {
+            margin-top: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .reservation-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <h2>2024년 2월 예약</h2>
+        </div>
+        <div class="calendar">
+            <div class="weekday">일</div>
+            <div class="weekday">월</div>
+            <div class="weekday">화</div>
+            <div class="weekday">수</div>
+            <div class="weekday">목</div>
+            <div class="weekday">금</div>
+            <div class="weekday">토</div>
+        </div>
+        <div class="time-slots" style="display: none;"></div>
     </div>
-  );
-};
 
-export default FebruaryReservation;
+    <div class="modal" id="reservationModal">
+        <div class="modal-content">
+            <h3>예약하기</h3>
+            <div class="form-group">
+                <label>예약자 성함</label>
+                <input type="text" id="nameInput" required>
+            </div>
+            <div class="form-group">
+                <label>연락처</label>
+                <input type="tel" id="phoneInput" required>
+            </div>
+            <button class="btn" onclick="makeReservation()">예약하기</button>
+            <button class="btn" style="background: #6c757d;" onclick="closeModal()">취소</button>
+        </div>
+    </div>
+
+    <div class="reservations">
+        <h3>예약 현황</h3>
+        <div id="reservationsList"></div>
+    </div>
+
+    <script>
+        let selectedDate = null;
+        let selectedTime = null;
+        const reservations = {};
+
+        function generateCalendar() {
+            const calendar = document.querySelector('.calendar');
+            const firstDay = new Date(2024, 1, 1).getDay();
+            
+            // Add empty cells for days before the 1st
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'day';
+                calendar.appendChild(emptyDay);
+            }
+            
+            // Add days of February 2024 (29 days - leap year)
+            for (let i = 1; i <= 29; i++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'day';
+                dayElement.textContent = i;
+                dayElement.onclick = () => selectDate(i);
+                calendar.appendChild(dayElement);
+            }
+        }
+
+        function selectDate(day) {
+            // Reset previously selected date
+            document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
+            // Select new date
+            document.querySelectorAll('.day')[day + getFirstDayOffset() - 1].classList.add('selected');
+            
+            selectedDate = day;
+            showTimeSlots();
+        }
+
+        function getFirstDayOffset() {
+            return new Date(2024, 1, 1).getDay();
+        }
+
+        function showTimeSlots() {
+            const timeSlotsDiv = document.querySelector('.time-slots');
+            timeSlotsDiv.style.display = 'grid';
+            timeSlotsDiv.innerHTML = '';
+            
+            // Generate time slots from 10:00 to 20:00
+            for (let hour = 10; hour <= 20; hour++) {
+                const time = `${hour.toString().padStart(2, '0')}:00`;
+                const slot = document.createElement('div');
+                slot.className = 'time-slot';
+                if (isTimeSlotBooked(selectedDate, time)) {
+                    slot.classList.add('booked');
+                    slot.textContent = `${time} (예약됨)`;
+                } else {
+                    slot.textContent = time;
+                    slot.onclick = () => showModal(time);
+                }
+                timeSlotsDiv.appendChild(slot);
+            }
+        }
+
+        function isTimeSlotBooked(date, time) {
+            const dateKey = `2024-02-${date}`;
+            return reservations[dateKey]?.[time] !== undefined;
+        }
+
+        function showModal(time) {
+            selectedTime = time;
+            document.getElementById('reservationModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('reservationModal').style.display = 'none';
+            document.getElementById('nameInput').value = '';
+            document.getElementById('phoneInput').value = '';
+        }
+
+        function makeReservation() {
+            const name = document.getElementById('nameInput').value;
+            const phone = document.getElementById('phoneInput').value;
+
+            if (!name || !phone) {
+                alert('모든 정보를 입력해주세요.');
+                return;
+            }
+
+            const dateKey = `2024-02-${selectedDate}`;
+            if (!reservations[dateKey]) {
+                reservations[dateKey] = {};
+            }
+            
+            reservations[dateKey][selectedTime] = {
+                name: name,
+                phone: phone
+            };
+
+            closeModal();
+            showTimeSlots();
+            updateReservationsList();
+        }
+
+        function updateReservationsList() {
+            const listDiv = document.getElementById('reservationsList');
+            listDiv.innerHTML = '';
+
+            Object.keys(reservations).sort().forEach(date => {
+                Object.keys(reservations[date]).sort().forEach(time => {
+                    const reservation = reservations[date][time];
+                    const div = document.createElement('div');
+                    div.className = 'reservation-item';
+                    div.innerHTML = `
+                        <div><strong>${date.split('-')[2]}일 ${time}</strong></div>
+                        <div>예약자: ${reservation.name}</div>
+                        <div>연락처: ${reservation.phone}</div>
+                    `;
+                    listDiv.appendChild(div);
+                });
+            });
+        }
+
+        // Initialize calendar when page loads
+        generateCalendar();
+    </script>
+</body>
+</html>
