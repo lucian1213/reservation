@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2월 예약 시스템</title>
-    <!-- Firebase SDK 추가 -->
+    <title>2025년 2월 예약 시스템</title>
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
@@ -137,27 +137,12 @@
         .btn:hover {
             background: #0056b3;
         }
-
-        .reservations {
-            margin-top: 20px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .reservation-item {
-            padding: 10px;
-            border: 1px solid #ddd;
-            margin-bottom: 10px;
-            border-radius: 5px;
-        }
     </style>
 </head>
 <body>
     <div class="calendar-container">
         <div class="calendar-header">
-            <h2>2024년 2월 예약</h2>
+            <h2>2025년 2월 예약</h2>
         </div>
         <div class="calendar">
             <div class="weekday">일</div>
@@ -187,16 +172,10 @@
         </div>
     </div>
 
-    <div class="reservations">
-        <h3>예약 현황</h3>
-        <div id="reservationsList"></div>
-    </div>
-
     <script>
-        // Firebase 초기화 - 여기에 Firebase에서 받은 설정을 넣으세요
+        // Firebase 초기화
         const firebaseConfig = {
-            // Firebase 콘솔에서 복사한 설정을 여기에 붙여넣으세요
-  apiKey: "AIzaSyDEwIv6IFu0_Tg4OaYiUK5GWwpHqia6tlE",
+              apiKey: "AIzaSyDEwIv6IFu0_Tg4OaYiUK5GWwpHqia6tlE",
   authDomain: "reservation-mind.firebaseapp.com",
   projectId: "reservation-mind",
   storageBucket: "reservation-mind.firebasestorage.app",
@@ -204,19 +183,20 @@
   appId: "1:137392518118:web:a33e8eaf4399b46e2b9c27"
         };
 
-        // Firebase 초기화
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // 변수 선언
         let selectedDate = null;
         let selectedTime = null;
         const reservations = {};
 
-        // 달력 생성
+        // 지정된 시간대
+        const timeSlots = ['10:00', '13:00', '16:00', '19:00'];
+
         function generateCalendar() {
             const calendar = document.querySelector('.calendar');
-            const firstDay = new Date(2024, 1, 1).getDay();
+            // 2025년 2월 1일의 요일 (0: 일요일, 6: 토요일)
+            const firstDay = new Date(2025, 1, 1).getDay();
             
             // 첫째 날 이전의 빈 칸 추가
             for (let i = 0; i < firstDay; i++) {
@@ -225,8 +205,8 @@
                 calendar.appendChild(emptyDay);
             }
             
-            // 2월 날짜 추가 (윤년이라 29일까지)
-            for (let i = 1; i <= 29; i++) {
+            // 2025년 2월은 28일까지
+            for (let i = 1; i <= 28; i++) {
                 const dayElement = document.createElement('div');
                 dayElement.className = 'day';
                 dayElement.textContent = i;
@@ -235,7 +215,6 @@
             }
         }
 
-        // 날짜 선택
         function selectDate(day) {
             document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
             document.querySelectorAll('.day')[day + getFirstDayOffset() - 1].classList.add('selected');
@@ -244,18 +223,15 @@
         }
 
         function getFirstDayOffset() {
-            return new Date(2024, 1, 1).getDay();
+            return new Date(2025, 1, 1).getDay();
         }
 
-        // 시간대 표시
         function showTimeSlots() {
             const timeSlotsDiv = document.querySelector('.time-slots');
             timeSlotsDiv.style.display = 'grid';
             timeSlotsDiv.innerHTML = '';
             
-            // 10:00부터 20:00까지 시간대 생성
-            for (let hour = 10; hour <= 20; hour++) {
-                const time = `${hour.toString().padStart(2, '0')}:00`;
+            timeSlots.forEach(time => {
                 const slot = document.createElement('div');
                 slot.className = 'time-slot';
                 if (isTimeSlotBooked(selectedDate, time)) {
@@ -266,29 +242,25 @@
                     slot.onclick = () => showModal(time);
                 }
                 timeSlotsDiv.appendChild(slot);
-            }
+            });
         }
 
-        // 시간대 예약 여부 확인
         function isTimeSlotBooked(date, time) {
-            const dateKey = `2024-02-${date}`;
+            const dateKey = `2025-02-${date}`;
             return reservations[dateKey]?.[time] !== undefined;
         }
 
-        // 모달 표시
         function showModal(time) {
             selectedTime = time;
             document.getElementById('reservationModal').style.display = 'block';
         }
 
-        // 모달 닫기
         function closeModal() {
             document.getElementById('reservationModal').style.display = 'none';
             document.getElementById('nameInput').value = '';
             document.getElementById('phoneInput').value = '';
         }
 
-        // 예약하기
         async function makeReservation() {
             const name = document.getElementById('nameInput').value;
             const phone = document.getElementById('phoneInput').value;
@@ -298,10 +270,9 @@
                 return;
             }
 
-            const dateKey = `2024-02-${selectedDate}`;
+            const dateKey = `2025-02-${selectedDate}`;
             
             try {
-                // Firestore에 데이터 저장
                 await db.collection('reservations').add({
                     date: dateKey,
                     time: selectedTime,
@@ -310,7 +281,6 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                // 로컬 상태 업데이트
                 if (!reservations[dateKey]) {
                     reservations[dateKey] = {};
                 }
@@ -318,7 +288,6 @@
 
                 closeModal();
                 showTimeSlots();
-                updateReservationsList();
                 alert('예약이 완료되었습니다!');
             } catch (error) {
                 alert('예약 중 오류가 발생했습니다. 다시 시도해주세요.');
@@ -326,27 +295,6 @@
             }
         }
 
-        // 예약 목록 업데이트
-        function updateReservationsList() {
-            const listDiv = document.getElementById('reservationsList');
-            listDiv.innerHTML = '';
-
-            Object.keys(reservations).sort().forEach(date => {
-                Object.keys(reservations[date]).sort().forEach(time => {
-                    const reservation = reservations[date][time];
-                    const div = document.createElement('div');
-                    div.className = 'reservation-item';
-                    div.innerHTML = `
-                        <div><strong>${date.split('-')[2]}일 ${time}</strong></div>
-                        <div>예약자: ${reservation.name}</div>
-                        <div>연락처: ${reservation.phone}</div>
-                    `;
-                    listDiv.appendChild(div);
-                });
-            });
-        }
-
-        // 예약 데이터 불러오기
         async function loadReservations() {
             try {
                 const snapshot = await db.collection('reservations').get();
@@ -360,7 +308,6 @@
                         phone: data.phone
                     };
                 });
-                updateReservationsList();
             } catch (error) {
                 console.error('Error loading reservations:', error);
             }
