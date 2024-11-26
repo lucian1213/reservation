@@ -226,16 +226,19 @@
             return new Date(2025, 1, 1).getDay();
         }
 
-        async function showTimeSlots() {
+      async function showTimeSlots() {
     const timeSlotsDiv = document.querySelector('.time-slots');
     timeSlotsDiv.style.display = 'grid';
     timeSlotsDiv.innerHTML = '';
+    
+    const dateKey = `2025-02-${selectedDate}`;
     
     for (const time of timeSlots) {
         const slot = document.createElement('div');
         slot.className = 'time-slot';
         
-        const isBooked = await isTimeSlotBooked(selectedDate, time);
+        // 예약 여부 확인
+        const isBooked = reservations[dateKey]?.[time] !== undefined;
         
         if (isBooked) {
             slot.classList.add('booked');
@@ -329,29 +332,36 @@ async function isTimeSlotBooked(date, time) {
 }
 
 
-        async function loadReservations() {
-            try {
-                const snapshot = await db.collection('reservations').get();
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if (!reservations[data.date]) {
-                        reservations[data.date] = {};
-                    }
-                    reservations[data.date][data.time] = {
-                        name: data.name,
-                        phone: data.phone
-                    };
-                });
-            } catch (error) {
-                console.error('Error loading reservations:', error);
+       // 예약 데이터 불러오기 함수 수정
+async function loadReservations() {
+    try {
+        const snapshot = await db.collection('reservations').get();
+        // 예약 데이터 초기화
+        reservations = {};
+        
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            // 날짜 키 형식 확인
+            const dateKey = data.date;
+            if (!reservations[dateKey]) {
+                reservations[dateKey] = {};
             }
-        }
+            // 시간대별 예약 정보 저장
+            reservations[dateKey][data.time] = {
+                name: data.name,
+                phone: data.phone
+            };
+        });
 
-        // 페이지 로드 시 실행
-        window.onload = function() {
-            generateCalendar();
-            loadReservations();
+        // 현재 선택된 날짜가 있다면 시간대 표시 업데이트
+        if (selectedDate) {
+            showTimeSlots();
         }
+        console.log('Loaded reservations:', reservations); // 데이터 확인용
+    } catch (error) {
+        console.error('Error loading reservations:', error);
+    }
+}
     </script>
 </body>
 </html>
