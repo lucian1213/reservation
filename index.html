@@ -9,12 +9,190 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
     <style>
-        /* 이전 CSS 스타일 전체 복사 */
-        /* (이전 코드의 style 태그 내용을 그대로 유지) */
+<style>
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.calendar-container {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.calendar-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.weekday {
+    text-align: center;
+    font-weight: bold;
+    padding: 10px;
+}
+
+.day {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    background: white;
+}
+
+.day:hover {
+    background: #f0f0f0;
+}
+
+.day.selected {
+    background: #007bff;
+    color: white;
+}
+
+.time-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.time-slot {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+    cursor: pointer;
+    background: white;
+}
+
+.time-slot:hover {
+    background: #f0f0f0;
+}
+
+.time-slot.booked {
+    background: #ffebe6;
+    cursor: not-allowed;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background: #007bff;
+    color: white;
+}
+
+.btn:hover {
+    background: #0056b3;
+}
+
+.reservations {
+    margin-top: 20px;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.reservation-item {
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+</style>
     </style>
 </head>
 <body>
-    <!-- 이전 HTML 구조 유지 -->
+    <div class="calendar-container">
+    <div class="calendar-header">
+        <h2>2024년 2월 예약</h2>
+    </div>
+    <div class="calendar">
+        <div class="weekday">일</div>
+        <div class="weekday">월</div>
+        <div class="weekday">화</div>
+        <div class="weekday">수</div>
+        <div class="weekday">목</div>
+        <div class="weekday">금</div>
+        <div class="weekday">토</div>
+    </div>
+    <div class="time-slots" style="display: none;"></div>
+</div>
+
+<div class="modal" id="reservationModal">
+    <div class="modal-content">
+        <h3>예약하기</h3>
+        <div class="form-group">
+            <label>예약자 성함</label>
+            <input type="text" id="nameInput" required>
+        </div>
+        <div class="form-group">
+            <label>연락처</label>
+            <input type="tel" id="phoneInput" required>
+        </div>
+        <button class="btn" onclick="makeReservation()">예약하기</button>
+        <button class="btn" style="background: #6c757d;" onclick="closeModal()">취소</button>
+    </div>
+</div>
+
+<div class="reservations">
+    <h3>예약 현황</h3>
+    <div id="reservationsList"></div>
+</div>
     
     <script>
         // Firebase 초기화
