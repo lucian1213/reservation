@@ -450,8 +450,103 @@ const firebaseConfig = {
         }
 
         // 예약 관리 함수들
-        async function loadReservations() {
-            try {
-                const snapshot = await db.collection('reservations').get();
-                allReservations = [];
-                snapshot.forEach((doc)
+       async function loadReservations() {
+    try {
+        const snapshot = await db.collection('reservations').get();
+        allReservations = [];
+        snapshot.forEach((doc) => {
+            allReservations.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        updateStats();
+        filterReservations();
+    } catch (error) {
+        console.error('Error loading reservations:', error);
+        alert('예약 정보를 불러오는 중 오류가 발생했습니다.');
+    }
+}
+
+function updateStats() {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const weekAgo = new Date(now.setDate(now.getDate() - 7)).toISOString().split('T')[0];
+
+    document.getElementById('totalReservations').textContent = allReservations.length;
+    document.getElementById('todayReservations').textContent = 
+        allReservations.filter(r => r.date.includes(today.slice(-2))).length;
+    document.getElementById('weekReservations').textContent = 
+        allReservations.filter(r => r.date >= weekAgo).length;
+}
+
+function filterReservations() {
+    const dateFilter = document.getElementById('dateFilter').value;
+    const nameFilter = document.getElementById('nameFilter').value.toLowerCase();
+
+    let filtered = allReservations;
+
+    if (dateFilter) {
+        const filterDate = dateFilter.slice(-2);
+        filtered = filtered.filter(r => r.date.includes(filterDate));
+    }
+
+    if (nameFilter) {
+        filtered = filtered.filter(r => r.name.toLowerCase().includes(nameFilter));
+    }
+
+    displayReservations(filtered);
+}
+
+function displayReservations(reservations) {
+    const listDiv = document.getElementById('reservationsList');
+    listDiv.innerHTML = '';
+
+    reservations.sort((a, b) => {
+        if (a.date === b.date) {
+            return a.time.localeCompare(b.time);
+        }
+        return a.date.localeCompare(b.date);
+    });
+
+    reservations.forEach(reservation => {
+        const div = document.createElement('div');
+        div.className = 'reservation-item';
+        div.innerHTML = `
+            <div class="reservation-info">
+                <div><strong>${reservation.date} ${reservation.time}</strong></div>
+                <div>예약자: ${reservation.name}</div>
+                <div>연락처: ${reservation.phone}</div>
+            </div>
+            <button class="btn btn-delete" onclick="deleteReservation('${reservation.id}')">
+                예약 취소
+            </button>
+        `;
+        listDiv.appendChild(div);
+    });
+}
+
+async function deleteReservation(id) {
+    if (!confirm('이 예약을 취소하시겠습니까?')) return;
+
+    try {
+        await db.collection('reservations').doc(id).delete();
+        alert('예약이 취소되었습니다.');
+        loadReservations();
+    } catch (error) {
+        console.error('Error deleting reservation:', error);
+        alert('예약 취소 중 오류가 발생했습니다.');
+    }
+}
+
+// 인증 상태 모니터링
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminDashboard').style.display = 'block';
+        loadReservations();
+    } else {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('adminDashboard').style.display = 'none';
+    }
+});
