@@ -7,6 +7,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     
     <style>
         * {
@@ -37,6 +38,13 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         .reservation-item {
             padding: 15px;
             border: 1px solid #ddd;
@@ -57,14 +65,11 @@
             border-radius: 5px;
             cursor: pointer;
             color: white;
+            background: #007bff;
         }
 
         .btn-delete {
             background: #dc3545;
-        }
-
-        .btn-delete:hover {
-            background: #c82333;
         }
 
         .form-group {
@@ -108,22 +113,35 @@
             font-weight: bold;
             color: #007bff;
         }
+
+        .error-message {
+            color: #dc3545;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <!-- 로그인 폼 -->
     <div id="loginForm" class="login-container">
         <h2>관리자 로그인</h2>
+        <div class="error-message" id="errorMessage"></div>
+        <div class="form-group">
+            <label>이메일</label>
+            <input type="email" id="emailInput">
+        </div>
         <div class="form-group">
             <label>비밀번호</label>
-            <input type="password" id="adminPassword">
+            <input type="password" id="passwordInput">
         </div>
-        <button class="btn" style="background: #007bff;" onclick="login()">로그인</button>
+        <button class="btn" onclick="login()">로그인</button>
     </div>
 
     <!-- 관리자 대시보드 -->
     <div id="adminDashboard" class="admin-container" style="display: none;">
-        <h2>예약 관리 대시보드</h2>
+        <div class="header">
+            <h2>예약 관리 대시보드</h2>
+            <button class="btn" onclick="logout()">로그아웃</button>
+        </div>
         
         <!-- 통계 -->
         <div class="stats-container">
@@ -152,33 +170,43 @@
     </div>
 
     <script>
-        // Firebase 초기화 - 기존 설정 사용
-        const firebaseConfig = {
-             apiKey: "AIzaSyDEwIv6IFu0_Tg4OaYiUK5GWwpHqia6tlE",
+        // Firebase 초기화
+       const firebaseConfig = {
+  apiKey: "AIzaSyDEwIv6IFu0_Tg4OaYiUK5GWwpHqia6tlE",
   authDomain: "reservation-mind.firebaseapp.com",
   projectId: "reservation-mind",
   storageBucket: "reservation-mind.firebasestorage.app",
   messagingSenderId: "137392518118",
   appId: "1:137392518118:web:a33e8eaf4399b46e2b9c27"
-        };
-
+};
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-
-        // 관리자 비밀번호 (실제로는 더 안전한 인증 방식을 사용해야 함)
-        const ADMIN_PASSWORD = "1234"; // 이 비밀번호를 원하는 것으로 변경하세요
+        const auth = firebase.auth();
 
         let allReservations = [];
 
-        function login() {
-            const password = document.getElementById('adminPassword').value;
-            if (password === ADMIN_PASSWORD) {
+        async function login() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const errorMessage = document.getElementById('errorMessage');
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
                 document.getElementById('loginForm').style.display = 'none';
                 document.getElementById('adminDashboard').style.display = 'block';
                 loadReservations();
-            } else {
-                alert('비밀번호가 올바르지 않습니다.');
+            } catch (error) {
+                errorMessage.textContent = '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.';
             }
+        }
+
+        function logout() {
+            auth.signOut().then(() => {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('adminDashboard').style.display = 'none';
+                document.getElementById('emailInput').value = '';
+                document.getElementById('passwordInput').value = '';
+            });
         }
 
         async function loadReservations() {
@@ -269,6 +297,18 @@
                 alert('예약 취소 중 오류가 발생했습니다.');
             }
         }
+
+        // 인증 상태 모니터링
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                loadReservations();
+            } else {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('adminDashboard').style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
