@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -312,6 +312,7 @@ async function login() {
         document.getElementById('modalNameInput').value = name;
 
         generateCalendar();
+        loadUserReservation();
 
     } catch (error) {
         console.error('로그인 에러:', error); // 상세 에러 로그
@@ -431,48 +432,113 @@ async function showTimeSlots() {
             document.getElementById('phoneInput').value = '';
         }
 
-        async function makeReservation() {
-            if (!currentUser) {
-                alert('로그인이 필요합니다.');
-                return;
-            }
+async function makeReservation() {
+    if (!currentUser) {
+        alert('로그인이 필요합니다.');
+        return;
+    }
 
-            const phone = document.getElementById('phoneInput').value;
+    const phone = document.getElementById('phoneInput').value;
 
-            if (!phone) {
-                alert('연락처를 입력해주세요.');
-                return;
-            }
+    if (!phone) {
+        alert('연락처를 입력해주세요.');
+        return;
+    }
 
-            const dateKey = `2025-02-${selectedDate}`;
+    const dateKey = `2025-02-${selectedDate}`;
 
-            try {
-                // 중복 예약 체크
-                const isBooked = await isTimeSlotBooked(dateKey, selectedTime);
-                if (isBooked) {
-                    alert('이미 예약된 시간입니다.');
-                    closeModal();
-                    showTimeSlots();
-                    return;
-                }
+    try {
+        // 사용자의 기존 예약 확인
+        const existingReservationSnapshot = await db.collection('reservations')
+            .where('userId', '==', currentUser.id)
+            .get();
 
-                await db.collection('reservations').add({
-                    date: dateKey,
-                    time: selectedTime,
-                    name: currentUser.name,
-                    phone: phone,
-                    userId: currentUser.id,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                alert('예약이 완료되었습니다!');
-                closeModal();
-                showTimeSlots();
-            } catch (error) {
-                console.error('Error:', error);
-                alert('예약 중 오류가 발생했습니다.');
-            }
+        if (!existingReservationSnapshot.empty) {
+            alert('이미 예약된 내역이 있습니다. 기존 예약을 취소 후 다시 시도해주세요.');
+            return;
         }
+
+        // 중복 예약 체크
+        const isBooked = await isTimeSlotBooked(dateKey, selectedTime);
+        if (isBooked) {
+            alert('이미 예약된 시간입니다.');
+            closeModal();
+            showTimeSlots();
+            return;
+        }
+
+        await db.collection('reservations').add({
+            date: dateKey,
+            time: selectedTime,
+            name: currentUser.name,
+            phone: phone,
+            userId: currentUser.id,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert('예약이 완료되었습니다!');
+        closeModal();
+        showTimeSlots();
+        loadUserReservation(); // 새로 추가할 함수
+    } catch (error) {
+        console.error('Error:', error);
+        alert('예약 중 오류가 발생했습니다.');
+    }
+}
+
+// 로그인 후 사용자의 예약 정보를 불러오는 함수 추가
+async function loadUserReservation() {
+    const reservationInfoDiv = document.getElementById('reservationInfo');
+    if (!reservationInfoDiv) {
+        // 예약 정보를 표시할 div 생성
+        const newDiv = document.createElement('div');
+        newDiv.id = 'reservationInfo';
+        newDiv.style.marginTop = '20px';
+        newDiv.style.padding = '15px';
+        newDiv.style.background = '#f8f9fa';
+        newDiv.style.borderRadius = '8px';
+        document.querySelector('.calendar-container').appendChild(newDiv);
+    }
+
+    try {
+        const reservationSnapshot = await db.collection('reservations')
+            .where('userId', '==', currentUser.id)
+            .get();
+
+        if (reservationSnapshot.empty) {
+            document.getElementById('reservationInfo').innerHTML = '현재 예약된 내역이 없습니다.';
+            return;
+        }
+
+        const reservation = reservationSnapshot.docs[0].data();
+        document.getElementById('reservationInfo').innerHTML = `
+            <h3>나의 예약 정보</h3>
+            <p>날짜: ${reservation.date}</p>
+            <p>시간: ${reservation.time}</p>
+            <p>연락처: ${reservation.phone}</p>
+            <button class="btn" onclick="cancelReservation('${reservationSnapshot.docs[0].id}')">예약 취소</button>
+        `;
+    } catch (error) {
+        console.error('Error loading reservation:', error);
+    }
+}
+
+// 예약 취소 함수 추가
+async function cancelReservation(reservationId) {
+    if (!confirm('예약을 취소하시겠습니까?')) return;
+
+    try {
+        await db.collection('reservations').doc(reservationId).delete();
+        alert('예약이 취소되었습니다.');
+        loadUserReservation();
+        showTimeSlots();
+    } catch (error) {
+        console.error('Error canceling reservation:', error);
+        alert('예약 취소 중 오류가 발생했습니다.');
+    }
+}
+
+
     </script>
 </body>
 </html>
