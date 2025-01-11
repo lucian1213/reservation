@@ -328,32 +328,7 @@ async function login() {
     }
 }
 
-// 페이지 로드 시 세션 복원 함수 추가
-async function checkSavedSession() {
-    const savedUserData = localStorage.getItem('userData');
-    
-    if (savedUserData) {
-        try {
-            // 익명 로그인 먼저 시도
-            await auth.signInAnonymously();
 
-            // 저장된 사용자 정보 복원
-            currentUser = JSON.parse(savedUserData);
-
-            // UI 업데이트
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('mainContainer').style.display = 'block';
-            document.getElementById('userDisplay').textContent = `${currentUser.name}님 환영합니다`;
-            document.getElementById('modalNameInput').value = currentUser.name;
-
-            generateCalendar();
-            loadUserReservation();
-        } catch (error) {
-            console.error('세션 복원 에러:', error);
-            localStorage.removeItem('userData');
-        }
-    }
-}
        function logout() {
     currentUser = null;
     document.getElementById('loginForm').style.display = 'block';
