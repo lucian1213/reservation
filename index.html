@@ -91,16 +91,15 @@ async function login() {
     const name = document.getElementById('nameInput').value;
     const code = document.getElementById('codeInput').value;
 
-    console.log('로그인 시도:', { name, code }); // 입력값 확인
+    console.log('로그인 시도:', { name, code });
 
     try {
-        // users 컬렉션에서 해당 사용자 찾기
         const userSnapshot = await db.collection('users')
             .where('name', '==', name)
             .where('code', '==', code)
             .get();
 
-        console.log('쿼리 결과:', userSnapshot); // 쿼리 결과 확인
+        console.log('쿼리 결과:', userSnapshot);
 
         if (userSnapshot.empty) {
             alert('잘못된 정보입니다. 이름과 개인번호를 확인해주세요.');
@@ -109,7 +108,7 @@ async function login() {
 
         // 사용자 정보 저장
         const userData = userSnapshot.docs[0].data();
-        console.log('사용자 데이터:', userData); // 사용자 데이터 확인
+        console.log('사용자 데이터:', userData);
 
         currentUser = {
             id: userSnapshot.docs[0].id,
@@ -121,10 +120,9 @@ async function login() {
         // UI 업데이트
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('mainContainer').style.display = 'block';
-        loadReservations();
         
     } catch (error) {
-        console.error('구체적인 로그인 에러:', error); // 구체적인 에러 내용 확인
+        console.error('구체적인 로그인 에러:', error);
         alert('로그인 중 오류가 발생했습니다.');
     }
 }
