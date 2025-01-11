@@ -279,25 +279,26 @@ async function login() {
     const code = document.getElementById('codeInput').value;
 
     try {
-        console.log('로그인 시도:', name, code); // 디버깅용 로그
+        // 익명 로그인 먼저 시도
+        await auth.signInAnonymously();
 
+        // 사용자 존재 여부 확인
         const userSnapshot = await db.collection('users')
             .where('name', '==', name)
             .where('code', '==', code)
             .get();
 
-        console.log('쿼리 결과:', userSnapshot.size); // 디버깅용 로그
-
         if (userSnapshot.empty) {
-            console.log('사용자 없음'); // 디버깅용 로그
+            // 익명 로그인 해제
+            await auth.signOut();
+            
             document.getElementById('errorMessage').textContent = 
                 '잘못된 정보입니다. 이름과 개인번호를 확인해주세요.';
             return;
         }
 
+        // 사용자 데이터 저장
         const userData = userSnapshot.docs[0].data();
-        console.log('사용자 데이터:', userData); // 디버깅용 로그
-
         currentUser = {
             id: userSnapshot.docs[0].id,
             name: userData.name,
@@ -306,6 +307,10 @@ async function login() {
             availableDays: userData.availableDays || []
         };
 
+        // 로컬 스토리지에 사용자 정보 저장
+        localStorage.setItem('userData', JSON.stringify(currentUser));
+
+        // UI 업데이트
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('mainContainer').style.display = 'block';
         document.getElementById('userDisplay').textContent = `${name}님 환영합니다`;
@@ -315,19 +320,56 @@ async function login() {
         loadUserReservation();
 
     } catch (error) {
-        console.error('로그인 에러:', error); // 상세 에러 로그
+        console.error('로그인 에러:', error);
         document.getElementById('errorMessage').textContent = 
-            '로그인 중 오류가 발생했습니다.';
+            '로그인 중 오류가 발생했습니다: ' + error.message;
+    }
+}
+
+// 페이지 로드 시 세션 복원 함수 추가
+async function checkSavedSession() {
+    const savedUserData = localStorage.getItem('userData');
+    
+    if (savedUserData) {
+        try {
+            // 익명 로그인 먼저 시도
+            await auth.signInAnonymously();
+
+            // 저장된 사용자 정보 복원
+            currentUser = JSON.parse(savedUserData);
+
+            // UI 업데이트
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('userDisplay').textContent = `${currentUser.name}님 환영합니다`;
+            document.getElementById('modalNameInput').value = currentUser.name;
+
+            generateCalendar();
+            loadUserReservation();
+        } catch (error) {
+            console.error('세션 복원 에러:', error);
+            localStorage.removeItem('userData');
+        }
     }
 }
         function logout() {
-            currentUser = null;
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('mainContainer').style.display = 'none';
-            document.getElementById('nameInput').value = '';
-            document.getElementById('codeInput').value = '';
-            document.getElementById('errorMessage').textContent = '';
-        }
+    // 로컬 스토리지 초기화
+    localStorage.removeItem('userData');
+    
+    // 기존 로그아웃 로직
+    currentUser = null;
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('mainContainer').style.display = 'none';
+    document.getElementById('nameInput').value = '';
+    document.getElementById('codeInput').value = '';
+    document.getElementById('errorMessage').textContent = '';
+    
+    // Firebase 로그아웃
+    auth.signOut();
+}
+
+// 페이지 로드 시 세션 복원 시도
+document.addEventListener('DOMContentLoaded', checkSavedSession);
 
         function generateCalendar() {
             const calendar = document.querySelector('.calendar');
