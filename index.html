@@ -382,9 +382,23 @@ async function showTimeSlots() {
     const userData = userDoc.data();
     const availableDays = userData.availableDays || [];
 
+    // 날짜 제한 확인 추가
+    const blockedDateSnapshot = await db.collection('reservation_blocks')
+        .where('date', '==', dateKey)
+        .get();
+
+    const isDateBlocked = !blockedDateSnapshot.empty;
+
     for (const time of timeSlots) {
         const slot = document.createElement('div');
         slot.className = 'time-slot';
+
+        // 날짜 블록 처리
+        if (isDateBlocked) {
+            slot.classList.add('disabled');
+            slot.textContent = `${time} (예약 불가)`;
+            continue;
+        }
 
         const isBooked = await isTimeSlotBooked(dateKey, time);
         const isAllowed = currentUser.timeSlots.includes(time);
