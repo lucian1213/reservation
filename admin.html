@@ -308,6 +308,22 @@ const firebaseConfig = {
 
         let allReservations = [];
 
+        async function login() {
+    const email = document.getElementById('emailInput').value;
+    const password = document.getElementById('passwordInput').value;
+    const errorMessage = document.getElementById('errorMessage');
+
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminDashboard').style.display = 'block';
+        loadReservations();
+    } catch (error) {
+        errorMessage.textContent = '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.';
+        console.error('Login error:', error);
+    }
+}
+
         // 탭 전환
         function showTab(tabName) {
             // 탭 버튼 상태 변경
