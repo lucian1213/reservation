@@ -290,9 +290,6 @@ async function login() {
     const code = document.getElementById('codeInput').value;
 
     try {
-        // 익명 로그인 먼저 시도
-        await auth.signInAnonymously();
-
         // 사용자 존재 여부 확인
         const userSnapshot = await db.collection('users')
             .where('name', '==', name)
@@ -300,9 +297,6 @@ async function login() {
             .get();
 
         if (userSnapshot.empty) {
-            // 익명 로그인 해제
-            await auth.signOut();
-            
             document.getElementById('errorMessage').textContent = 
                 '잘못된 정보입니다. 이름과 개인번호를 확인해주세요.';
             return;
@@ -317,9 +311,6 @@ async function login() {
             timeSlots: userData.timeSlots || [],
             availableDays: userData.availableDays || []
         };
-
-        // 로컬 스토리지에 사용자 정보 저장
-        localStorage.setItem('userData', JSON.stringify(currentUser));
 
         // UI 업데이트
         document.getElementById('loginForm').style.display = 'none';
@@ -363,20 +354,13 @@ async function checkSavedSession() {
         }
     }
 }
-        function logout() {
-    // 로컬 스토리지 초기화
-    localStorage.removeItem('userData');
-    
-    // 기존 로그아웃 로직
+       function logout() {
     currentUser = null;
     document.getElementById('loginForm').style.display = 'block';
     document.getElementById('mainContainer').style.display = 'none';
     document.getElementById('nameInput').value = '';
     document.getElementById('codeInput').value = '';
     document.getElementById('errorMessage').textContent = '';
-    
-    // Firebase 로그아웃
-    auth.signOut();
 }
 
 // 페이지 로드 시 세션 복원 시도
