@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -43,6 +44,23 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+        }
+
+        .tab-container {
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            border: none;
+            background: #f8f9fa;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .tab-button.active {
+            background: #007bff;
+            color: white;
         }
 
         .reservation-item {
@@ -119,14 +137,6 @@
             margin-bottom: 10px;
         }
 
-        .user-management {
-            margin-top: 30px;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
         .add-user-form {
             margin-bottom: 30px;
             padding: 20px;
@@ -152,40 +162,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .user-info {
-            flex-grow: 1;
-        }
-
-        .user-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .tab-container {
-            margin-bottom: 20px;
-        }
-
-        .tab-button {
-            padding: 10px 20px;
-            border: none;
-            background: #f8f9fa;
-            cursor: pointer;
-            border-radius: 5px 5px 0 0;
-        }
-
-        .tab-button.active {
-            background: #007bff;
-            color: white;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
         }
     </style>
 </head>
@@ -219,7 +195,7 @@
         </div>
 
         <!-- 예약 관리 탭 -->
-        <div id="reservationsTab" class="tab-content active">
+        <div id="reservationsTab" class="tab-content">
             <!-- 통계 -->
             <div class="stats-container">
                 <div class="stat-card">
@@ -247,7 +223,7 @@
         </div>
 
         <!-- 사용자 관리 탭 -->
-        <div id="usersTab" class="tab-content">
+        <div id="usersTab" class="tab-content" style="display: none;">
             <!-- 사용자 추가 폼 -->
             <div class="add-user-form">
                 <h3>새 사용자 추가</h3>
@@ -293,7 +269,7 @@
 
     <script>
         // Firebase 초기화
-const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyDEwIv6IFu0_Tg4OaYiUK5GWwpHqia6tlE",
   authDomain: "reservation-mind.firebaseapp.com",
   projectId: "reservation-mind",
@@ -307,44 +283,6 @@ const firebaseConfig = {
         const auth = firebase.auth();
 
         let allReservations = [];
-
-        async function login() {
-    const email = document.getElementById('emailInput').value;
-    const password = document.getElementById('passwordInput').value;
-    const errorMessage = document.getElementById('errorMessage');
-
-    try {
-        await auth.signInWithEmailAndPassword(email, password);
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('adminDashboard').style.display = 'block';
-        loadReservations();
-    } catch (error) {
-        errorMessage.textContent = '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.';
-        console.error('Login error:', error);
-    }
-}
-
-        // 탭 전환
-        function showTab(tabName) {
-            // 탭 버튼 상태 변경
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.classList.remove('active');
-            });
-            event.target.classList.add('active');
-
-            // 탭 내용 변경
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(tabName + 'Tab').classList.add('active');
-
-            // 탭에 따른 데이터 로드
-            if (tabName === 'users') {
-                loadUsers();
-            } else {
-                loadReservations();
-            }
-        }
 
         async function login() {
             const email = document.getElementById('emailInput').value;
@@ -370,13 +308,124 @@ const firebaseConfig = {
             });
         }
 
+        function showTab(tabName) {
+            // 탭 버튼 상태 변경
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 예약 관리 탭
+            if (tabName === 'reservations') {
+                document.getElementById('reservationsTab').style.display = 'block';
+                document.getElementById('usersTab').style.display = 'none';
+                loadReservations();
+            } 
+            // 사용자 관리 탭
+            else {
+                document.getElementById('reservationsTab').style.display = 'none';
+                document.getElementById('usersTab').style.display = 'block';
+                loadUsers();
+            }
+        }
+
+        async function loadReservations() {
+            try {
+                const snapshot = await db.collection('reservations').get();
+                allReservations = [];
+                snapshot.forEach((doc) => {
+                    allReservations.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                updateStats();
+                filterReservations();
+            } catch (error) {
+                console.error('Error loading reservations:', error);
+                alert('예약 정보를 불러오는 중 오류가 발생했습니다.');
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalReservations').textContent = allReservations.length;
+            
+            // 오늘의 예약
+            const today = new Date().toISOString().split('T')[0];
+            const todayReservations = allReservations.filter(r => r.date === `2025-02-${today.slice(-2)}`);
+            document.getElementById('todayReservations').textContent = todayReservations.length;
+            
+            // 이번 주 예약
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const weekReservations = allReservations.filter(r => new Date(r.date) >= weekAgo);
+            document.getElementById('weekReservations').textContent = weekReservations.length;
+        }
+
+        function filterReservations() {
+            const dateFilter = document.getElementById('dateFilter').value;
+            const nameFilter = document.getElementById('nameFilter').value.toLowerCase();
+
+            let filtered = allReservations;
+
+            if (dateFilter) {
+                filtered = filtered.filter(r => r.date.includes(dateFilter));
+            }
+
+            if (nameFilter) {
+                filtered = filtered.filter(r => r.name.toLowerCase().includes(nameFilter));
+            }
+
+            displayReservations(filtered);
+        }
+
+        function displayReservations(reservations) {
+            const listDiv = document.getElementById('reservationsList');
+            listDiv.innerHTML = '';
+
+            reservations.sort((a, b) => {
+                if (a.date === b.date) {
+                    return a.time.localeCompare(b.time);
+                }
+                return a.date.localeCompare(b.date);
+            });
+
+            reservations.forEach(reservation => {
+                const div = document.createElement('div');
+                div.className = 'reservation-item';
+                div.innerHTML = `
+                    <div class="reservation-info">
+                        <div><strong>${reservation.date} ${reservation.time}</strong></div>
+                        <div>예약자: ${reservation.name}</div>
+                        <div>연락처: ${reservation.phone}</div>
+                    </div>
+                    <button class="btn btn-delete" onclick="deleteReservation('${reservation.id}')">
+                        예약 취소
+                    </button>
+                `;
+                listDiv.appendChild(div);
+            });
+        }
+
+        async function deleteReservation(id) {
+            if (!confirm('이 예약을 취소하시겠습니까?')) return;
+
+            try {
+                await db.collection('reservations').doc(id).delete();
+                alert('예약이 취소되었습니다.');
+                loadReservations();
+            } catch (error) {
+                console.error('Error deleting reservation:', error);
+                alert('예약 취소 중 오류가 발생했습니다.');
+            }
+        }
+
         // 사용자 관리 함수
         async function addUser() {
             const name = document.getElementById('userNameInput').value;
             const code = document.getElementById('userCodeInput').value;
             const timeSlots = [];
             
-            // 선택된 시간 가져오기
             ['10:00', '13:00', '16:00', '19:00'].forEach(time => {
                 const checkbox = document.getElementById(`time${time.replace(':', '')}`);
                 if (checkbox.checked) {
@@ -400,7 +449,6 @@ const firebaseConfig = {
                     return;
                 }
 
-                // 사용자 추가
                 await db.collection('users').add({
                     name: name,
                     code: code,
@@ -412,7 +460,7 @@ const firebaseConfig = {
                 clearUserForm();
                 loadUsers();
             } catch (error) {
-                console.error('Error adding user:', error);
+                console.error('Error:', error);
                 alert('사용자 추가 중 오류가 발생했습니다.');
             }
         }
@@ -426,21 +474,19 @@ const firebaseConfig = {
                 snapshot.forEach(doc => {
                     const user = doc.data();
                     const div = document.createElement('div');
-                    div.className = 'user-item';
+                    div.className = 'reservation-item';
                     div.innerHTML = `
-                        <div class="user-info">
+                        <div class="reservation-info">
                             <div><strong>이름:</strong> ${user.name}</div>
                             <div><strong>개인번호:</strong> ${user.code}</div>
                             <div><strong>예약 가능 시간:</strong> ${user.timeSlots.join(', ')}</div>
                         </div>
-                        <div class="user-actions">
-                            <button class="btn btn-delete" onclick="deleteUser('${doc.id}')">삭제</button>
-                        </div>
+                        <button class="btn btn-delete" onclick="deleteUser('${doc.id}')">삭제</button>
                     `;
                     usersList.appendChild(div);
                 });
             } catch (error) {
-                console.error('Error loading users:', error);
+                console.error('Error:', error);
             }
         }
 
@@ -452,7 +498,7 @@ const firebaseConfig = {
                 alert('사용자가 삭제되었습니다.');
                 loadUsers();
             } catch (error) {
-                console.error('Error deleting user:', error);
+                console.error('Error:', error);
                 alert('사용자 삭제 중 오류가 발생했습니다.');
             }
         }
@@ -465,104 +511,17 @@ const firebaseConfig = {
             });
         }
 
-        // 예약 관리 함수들
-       async function loadReservations() {
-    try {
-        const snapshot = await db.collection('reservations').get();
-        allReservations = [];
-        snapshot.forEach((doc) => {
-            allReservations.push({
-                id: doc.id,
-                ...doc.data()
-            });
+        // 인증 상태 모니터링
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                loadReservations();
+            } else {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('adminDashboard').style.display = 'none';
+            }
         });
-        updateStats();
-        filterReservations();
-    } catch (error) {
-        console.error('Error loading reservations:', error);
-        alert('예약 정보를 불러오는 중 오류가 발생했습니다.');
-    }
-}
-
-function updateStats() {
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const weekAgo = new Date(now.setDate(now.getDate() - 7)).toISOString().split('T')[0];
-
-    document.getElementById('totalReservations').textContent = allReservations.length;
-    document.getElementById('todayReservations').textContent = 
-        allReservations.filter(r => r.date.includes(today.slice(-2))).length;
-    document.getElementById('weekReservations').textContent = 
-        allReservations.filter(r => r.date >= weekAgo).length;
-}
-
-function filterReservations() {
-    const dateFilter = document.getElementById('dateFilter').value;
-    const nameFilter = document.getElementById('nameFilter').value.toLowerCase();
-
-    let filtered = allReservations;
-
-    if (dateFilter) {
-        const filterDate = dateFilter.slice(-2);
-        filtered = filtered.filter(r => r.date.includes(filterDate));
-    }
-
-    if (nameFilter) {
-        filtered = filtered.filter(r => r.name.toLowerCase().includes(nameFilter));
-    }
-
-    displayReservations(filtered);
-}
-
-function displayReservations(reservations) {
-    const listDiv = document.getElementById('reservationsList');
-    listDiv.innerHTML = '';
-
-    reservations.sort((a, b) => {
-        if (a.date === b.date) {
-            return a.time.localeCompare(b.time);
-        }
-        return a.date.localeCompare(b.date);
-    });
-
-    reservations.forEach(reservation => {
-        const div = document.createElement('div');
-        div.className = 'reservation-item';
-        div.innerHTML = `
-            <div class="reservation-info">
-                <div><strong>${reservation.date} ${reservation.time}</strong></div>
-                <div>예약자: ${reservation.name}</div>
-                <div>연락처: ${reservation.phone}</div>
-            </div>
-            <button class="btn btn-delete" onclick="deleteReservation('${reservation.id}')">
-                예약 취소
-            </button>
-        `;
-        listDiv.appendChild(div);
-    });
-}
-
-async function deleteReservation(id) {
-    if (!confirm('이 예약을 취소하시겠습니까?')) return;
-
-    try {
-        await db.collection('reservations').doc(id).delete();
-        alert('예약이 취소되었습니다.');
-        loadReservations();
-    } catch (error) {
-        console.error('Error deleting reservation:', error);
-        alert('예약 취소 중 오류가 발생했습니다.');
-    }
-}
-
-// 인증 상태 모니터링
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('adminDashboard').style.display = 'block';
-        loadReservations();
-    } else {
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('adminDashboard').style.display = 'none';
-    }
-});
+    </script>
+</body>
+</html>
