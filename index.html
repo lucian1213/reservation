@@ -377,18 +377,10 @@ async function showTimeSlots() {
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     const selectedDay = days[selectedDateObj.getDay()];
     
-    // 이 부분 추가: 사용자의 가능한 요일 체크
     const userDoc = await db.collection('users').doc(currentUser.id).get();
     const userData = userDoc.data();
     const availableDays = userData.availableDays || [];
 
-    // 요일 제한 체크
-    if (!availableDays.includes(selectedDay)) {
-        alert(`${selectedDay}요일에는 예약할 수 없습니다.`);
-        timeSection.style.display = 'none';
-        return;
-    }
-    
     for (const time of timeSlots) {
         const slot = document.createElement('div');
         slot.className = 'time-slot';
@@ -396,6 +388,13 @@ async function showTimeSlots() {
         const isBooked = await isTimeSlotBooked(dateKey, time);
         const isAllowed = currentUser.timeSlots.includes(time);
         
+        // 요일 제한 체크
+        if (!availableDays.includes(selectedDay)) {
+            slot.classList.add('disabled');
+            slot.textContent = time;
+            continue; // 다음 시간 슬롯으로 진행
+        }
+
         if (isBooked) {
             slot.classList.add('booked');
             slot.textContent = `${time} (예약됨)`;
@@ -409,7 +408,6 @@ async function showTimeSlots() {
         timeSlotsDiv.appendChild(slot);
     }
 }
-
         async function isTimeSlotBooked(date, time) {
             try {
                 const reservationSnapshot = await db.collection('reservations')
