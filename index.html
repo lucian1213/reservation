@@ -395,7 +395,8 @@ async function showTimeSlots() {
             const isAllowed = currentUser.timeSlots.includes(time);
             
             if (isBooked) {
-                slot.classList.add('disabled');
+                slot.classList.add('booked');
+                slot.textContent = `${time} (예약됨)`;
             } else if (!isAllowed) {
                 slot.classList.add('disabled');
             } else {
