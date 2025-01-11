@@ -1,15 +1,169 @@
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>예약 시스템</title>
+    <title>2025년 2월 예약 시스템</title>
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
     <style>
-        /* 기존 스타일 유지 */
-        
-        /* 로그인 관련 스타일 추가 */
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .calendar-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .weekday {
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+        }
+
+        .day {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            background: white;
+        }
+
+        .day:hover {
+            background: #f0f0f0;
+        }
+
+        .day.selected {
+            background: #007bff;
+            color: white;
+        }
+
+        .time-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .time-section-header {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            padding: 10px;
+        }
+
+        .time-slot {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+            cursor: pointer;
+            background: white;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .time-slot:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .time-slot.booked {
+            background: #ffebe6;
+            cursor: not-allowed;
+            color: #d32f2f;
+        }
+
+        .time-slot.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f5f5f5;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
         .login-container {
             max-width: 400px;
             margin: 100px auto;
@@ -20,7 +174,16 @@
         }
 
         .main-container {
-            display: none;  /* 초기에는 숨김 */
+            display: none;
+        }
+
+        .user-info {
+            text-align: right;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .error-message {
@@ -28,33 +191,23 @@
             margin-bottom: 10px;
             font-size: 14px;
         }
-
-        .user-info {
-            text-align: right;
-            margin-bottom: 20px;
-        }
-
-        .time-slot.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background: #f5f5f5;
-        }
     </style>
 </head>
 <body>
     <!-- 로그인 폼 -->
     <div id="loginForm" class="login-container">
-    <h2>로그인</h2>
-    <div class="form-group">
-        <label>이름</label>
-        <input type="text" id="nameInput" required>
+        <h2>로그인</h2>
+        <div class="error-message" id="errorMessage"></div>
+        <div class="form-group">
+            <label>이름</label>
+            <input type="text" id="nameInput" required>
+        </div>
+        <div class="form-group">
+            <label>개인번호</label>
+            <input type="text" id="codeInput" required>
+        </div>
+        <button class="btn" onclick="login()">로그인</button>
     </div>
-    <div class="form-group">
-        <label>개인번호</label>
-        <input type="text" id="codeInput" required>
-    </div>
-    <button class="btn" onclick="login()">로그인</button>
-</div>
 
     <!-- 메인 컨테이너 -->
     <div id="mainContainer" class="main-container">
@@ -64,9 +217,8 @@
             <button class="btn" onclick="logout()">로그아웃</button>
         </div>
 
-        <!-- 기존 캘린더 컨테이너 -->
+        <!-- 캘린더 컨테이너 -->
         <div class="calendar-container">
-            <div class="calendar-container">
             <div class="calendar-header">
                 <h2>2025년 2월 예약</h2>
             </div>
@@ -84,14 +236,28 @@
                 <div class="time-slots"></div>
             </div>
         </div>
-    </div>
-</body>
+
+        <!-- 예약 모달 -->
+        <div class="modal" id="reservationModal">
+            <div class="modal-content">
+                <h3>예약하기</h3>
+                <div class="form-group">
+                    <label>예약자 성함</label>
+                    <input type="text" id="modalNameInput" readonly>
+                </div>
+                <div class="form-group">
+                    <label>연락처</label>
+                    <input type="tel" id="phoneInput" required>
+                </div>
+                <button class="btn" onclick="makeReservation()">예약하기</button>
+                <button class="btn" style="background: #6c757d;" onclick="closeModal()">취소</button>
+            </div>
         </div>
     </div>
 
     <script>
         // Firebase 초기화
-        const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyDEwIv6IFu0_Tg4OaYiUK5GWwpHqia6tlE",
   authDomain: "reservation-mind.firebaseapp.com",
   projectId: "reservation-mind",
@@ -104,47 +270,47 @@
         const db = firebase.firestore();
 
         let currentUser = null;
-        let userTimeSlots = [];
+        let selectedDate = null;
+        let selectedTime = null;
+        const timeSlots = ['10:00', '13:00', '16:00', '19:00'];
 
-async function login() {
-    const name = document.getElementById('nameInput').value;
-    const code = document.getElementById('codeInput').value;
+        async function login() {
+            const name = document.getElementById('nameInput').value;
+            const code = document.getElementById('codeInput').value;
 
-    console.log('로그인 시도:', { name, code });
+            try {
+                const userSnapshot = await db.collection('users')
+                    .where('name', '==', name)
+                    .where('code', '==', code)
+                    .get();
 
-    try {
-        const userSnapshot = await db.collection('users')
-            .where('name', '==', name)
-            .where('code', '==', code)
-            .get();
+                if (userSnapshot.empty) {
+                    document.getElementById('errorMessage').textContent = 
+                        '잘못된 정보입니다. 이름과 개인번호를 확인해주세요.';
+                    return;
+                }
 
-        console.log('쿼리 결과:', userSnapshot);
+                const userData = userSnapshot.docs[0].data();
+                currentUser = {
+                    id: userSnapshot.docs[0].id,
+                    name: userData.name,
+                    code: userData.code,
+                    timeSlots: userData.timeSlots || []
+                };
 
-        if (userSnapshot.empty) {
-            alert('잘못된 정보입니다. 이름과 개인번호를 확인해주세요.');
-            return;
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+                document.getElementById('userDisplay').textContent = `${name}님 환영합니다`;
+                document.getElementById('modalNameInput').value = name;
+
+                generateCalendar();
+
+            } catch (error) {
+                console.error('Login error:', error);
+                document.getElementById('errorMessage').textContent = 
+                    '로그인 중 오류가 발생했습니다.';
+            }
         }
-
-        // 사용자 정보 저장
-        const userData = userSnapshot.docs[0].data();
-        console.log('사용자 데이터:', userData);
-
-        currentUser = {
-            id: userSnapshot.docs[0].id,
-            name: userData.name,
-            code: userData.code,
-            timeSlots: userData.timeSlots || []
-        };
-
-        // UI 업데이트
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('mainContainer').style.display = 'block';
-        
-    } catch (error) {
-        console.error('구체적인 로그인 에러:', error);
-        alert('로그인 중 오류가 발생했습니다.');
-    }
-}
 
         function logout() {
             currentUser = null;
@@ -152,21 +318,61 @@ async function login() {
             document.getElementById('mainContainer').style.display = 'none';
             document.getElementById('nameInput').value = '';
             document.getElementById('codeInput').value = '';
+            document.getElementById('errorMessage').textContent = '';
         }
 
-        // showTimeSlots 함수 수정
+        function generateCalendar() {
+            const calendar = document.querySelector('.calendar');
+            // 2025년 2월 1일의 요일
+            const firstDay = new Date(2025, 1, 1).getDay();
+            
+            // 이전 내용 지우기
+            while (calendar.children.length > 7) {
+                calendar.removeChild(calendar.lastChild);
+            }
+            
+            // 첫째 날 이전의 빈 칸 추가
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'day';
+                calendar.appendChild(emptyDay);
+            }
+            
+            // 2월은 28일까지
+            for (let i = 1; i <= 28; i++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'day';
+                dayElement.textContent = i;
+                dayElement.onclick = () => selectDate(i);
+                calendar.appendChild(dayElement);
+            }
+        }
+
+        function selectDate(day) {
+            document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
+            document.querySelectorAll('.day')[day + getFirstDayOffset() - 1].classList.add('selected');
+            selectedDate = day;
+            showTimeSlots();
+        }
+
+        function getFirstDayOffset() {
+            return new Date(2025, 1, 1).getDay();
+        }
+
         async function showTimeSlots() {
             const timeSection = document.querySelector('.time-section');
             timeSection.style.display = 'block';
             const timeSlotsDiv = document.querySelector('.time-slots');
             timeSlotsDiv.innerHTML = '';
+
+            const dateKey = `2025-02-${selectedDate}`;
             
             for (const time of timeSlots) {
                 const slot = document.createElement('div');
                 slot.className = 'time-slot';
-                
-                const isBooked = await isTimeSlotBooked(selectedDate, time);
-                const isAllowed = userTimeSlots.includes(time);
+
+                const isBooked = await isTimeSlotBooked(dateKey, time);
+                const isAllowed = currentUser.timeSlots.includes(time);
                 
                 if (isBooked) {
                     slot.classList.add('booked');
@@ -182,20 +388,70 @@ async function login() {
             }
         }
 
-        // makeReservation 함수 수정
+        async function isTimeSlotBooked(date, time) {
+            try {
+                const reservationSnapshot = await db.collection('reservations')
+                    .where('date', '==', date)
+                    .where('time', '==', time)
+                    .get();
+                return !reservationSnapshot.empty;
+            } catch (error) {
+                console.error('Error checking reservation:', error);
+                return true; // 에러 발생 시 예약됨으로 처리
+            }
+        }
+
+        function showModal(time) {
+            selectedTime = time;
+            document.getElementById('reservationModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('reservationModal').style.display = 'none';
+            document.getElementById('phoneInput').value = '';
+        }
+
         async function makeReservation() {
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
             }
 
-            // ... 나머지 예약 코드 ...
-        }
+            const phone = document.getElementById('phoneInput').value;
 
-        // 페이지 로드 시 로그인 폼만 표시
-        window.onload = function() {
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('mainContainer').style.display = 'none';
+            if (!phone) {
+                alert('연락처를 입력해주세요.');
+                return;
+            }
+
+            const dateKey = `2025-02-${selectedDate}`;
+
+            try {
+                // 중복 예약 체크
+                const isBooked = await isTimeSlotBooked(dateKey, selectedTime);
+                if (isBooked) {
+                    alert('이미 예약된 시간입니다.');
+                    closeModal();
+                    showTimeSlots();
+                    return;
+                }
+
+                await db.collection('reservations').add({
+                    date: dateKey,
+                    time: selectedTime,
+                    name: currentUser.name,
+                    phone: phone,
+                    userId: currentUser.id,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert('예약이 완료되었습니다!');
+                closeModal();
+                showTimeSlots();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('예약 중 오류가 발생했습니다.');
+            }
         }
     </script>
 </body>
