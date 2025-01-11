@@ -219,6 +219,15 @@
                     <h3>이번 주 예약</h3>
                     <div id="weekReservations" class="stat-number">0</div>
                 </div>
+                <div class="date-block-section">
+    <h3>날짜별 예약 제한</h3>
+    <div class="form-group">
+        <label>제한할 날짜</label>
+        <input type="date" id="blockDateInput">
+        <button class="btn" onclick="blockReservationDate()">날짜 제한</button>
+    </div>
+    <div id="blockedDatesList" class="blocked-dates-list"></div>
+</div>
             </div>
 
             <!-- 필터 -->
@@ -604,6 +613,86 @@
                 return false;
             }
         }
+
+        // 관리자 페이지의 스크립트에 추가
+
+// 날짜 예약 제한 함수
+async function blockReservationDate() {
+    const dateToBlock = document.getElementById('blockDateInput').value;
+    
+    if (!dateToBlock) {
+        alert('제한할 날짜를 선택해주세요.');
+        return;
+    }
+
+    try {
+        // 이미 해당 날짜가 제한되어 있는지 확인
+        const existingBlock = await db.collection('reservation_blocks')
+            .where('date', '==', dateToBlock)
+            .get();
+
+        if (!existingBlock.empty) {
+            alert('이미 예약이 제한된 날짜입니다.');
+            return;
+        }
+
+        // 날짜 제한 추가
+        await db.collection('reservation_blocks').add({
+            date: dateToBlock,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert(`${dateToBlock} 날짜의 예약이 제한되었습니다.`);
+        loadBlockedDates(); // 제한된 날짜 목록 새로고침
+    } catch (error) {
+        console.error('날짜 제한 중 오류:', error);
+        alert('날짜 제한 중 오류가 발생했습니다.');
+    }
+}
+
+// 제한된 날짜 목록 불러오기
+async function loadBlockedDates() {
+    try {
+        const blockedDatesDiv = document.getElementById('blockedDatesList');
+        blockedDatesDiv.innerHTML = ''; // 기존 목록 초기화
+
+        const snapshot = await db.collection('reservation_blocks').get();
+        
+        if (snapshot.empty) {
+            blockedDatesDiv.innerHTML = '현재 제한된 날짜가 없습니다.';
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const blockedDate = doc.data();
+            const dateItem = document.createElement('div');
+            dateItem.className = 'reservation-item';
+            dateItem.innerHTML = `
+                <div class="reservation-info">
+                    <div>제한된 날짜: ${blockedDate.date}</div>
+                </div>
+                <button class="btn btn-delete" onclick="removeBlockedDate('${doc.id}')">제한 해제</button>
+            `;
+            blockedDatesDiv.appendChild(dateItem);
+        });
+    } catch (error) {
+        console.error('제한된 날짜 불러오기 오류:', error);
+    }
+}
+
+// 날짜 제한 해제 함수
+async function removeBlockedDate(docId) {
+    if (!confirm('이 날짜의 예약 제한을 해제하시겠습니까?')) return;
+
+    try {
+        await db.collection('reservation_blocks').doc(docId).delete();
+        alert('날짜 제한이 해제되었습니다.');
+        loadBlockedDates();
+    } catch (error) {
+        console.error('날짜 제한 해제 중 오류:', error);
+        alert('날짜 제한 해제 중 오류가 발생했습니다.');
+    }
+}
 
         // 인증 상태 모니터링
         auth.onAuthStateChanged((user) => {
