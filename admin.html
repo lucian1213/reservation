@@ -653,18 +653,29 @@ async function blockReservationDate() {
 // 제한된 날짜 목록 불러오기
 async function loadBlockedDates() {
     try {
+        console.log('loadBlockedDates 함수 호출됨');
+        
         const blockedDatesDiv = document.getElementById('blockedDatesList');
-        blockedDatesDiv.innerHTML = ''; // 기존 목록 초기화
-
+        if (!blockedDatesDiv) {
+            console.error('blockedDatesList div를 찾을 수 없습니다');
+            return;
+        }
+        
         const snapshot = await db.collection('reservation_blocks').get();
+        
+        console.log('불러온 차단 날짜 수:', snapshot.size);
+        
+        blockedDatesDiv.innerHTML = ''; // 기존 목록 초기화
         
         if (snapshot.empty) {
             blockedDatesDiv.innerHTML = '현재 제한된 날짜가 없습니다.';
             return;
         }
-
+        
         snapshot.forEach(doc => {
             const blockedDate = doc.data();
+            console.log('차단된 날짜:', blockedDate); // 각 날짜 로그 출력
+            
             const dateItem = document.createElement('div');
             dateItem.className = 'reservation-item';
             dateItem.innerHTML = `
@@ -677,6 +688,33 @@ async function loadBlockedDates() {
         });
     } catch (error) {
         console.error('제한된 날짜 불러오기 오류:', error);
+    }
+}
+
+// 페이지 로드 시 초기 호출
+document.addEventListener('DOMContentLoaded', () => {
+    loadBlockedDates();
+});
+
+function showTab(tabName) {
+    // 탭 버튼 상태 변경
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // 예약 관리 탭
+    if (tabName === 'reservations') {
+        document.getElementById('reservationsTab').style.display = 'block';
+        document.getElementById('usersTab').style.display = 'none';
+        loadReservations();
+    } 
+    // 사용자 관리 탭
+    else {
+        document.getElementById('reservationsTab').style.display = 'none';
+        document.getElementById('usersTab').style.display = 'block';
+        loadUsers();
+        loadBlockedDates(); // 사용자 관리 탭으로 이동할 때도 호출
     }
 }
 
