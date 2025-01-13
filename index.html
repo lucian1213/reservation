@@ -379,6 +379,13 @@ async function showTimeSlots() {
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     const selectedDay = days[selectedDateObj.getDay()];
     
+    // 날짜 차단 확인
+    const blockedDateSnapshot = await db.collection('reservation_blocks')
+        .where('date', '==', dateKey)
+        .get();
+
+    const isDateBlocked = !blockedDateSnapshot.empty;
+    
     const userDoc = await db.collection('users').doc(currentUser.id).get();
     const userData = userDoc.data();
     const availableDays = userData.availableDays || [];
@@ -387,6 +394,13 @@ async function showTimeSlots() {
         const slot = document.createElement('div');
         slot.className = 'time-slot';
         slot.textContent = time;
+
+        // 날짜 차단 체크
+        if (isDateBlocked) {
+            slot.classList.add('disabled');
+            slot.textContent = `${time} (예약 불가)`;
+            continue;
+        }
 
         // 요일 제한 체크
         if (!availableDays.includes(selectedDay)) {
