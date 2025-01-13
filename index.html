@@ -274,6 +274,7 @@ const firebaseConfig = {
         let selectedTime = null;
         const timeSlots = ['10:00', '13:00', '16:00', '19:00'];
 
+// 로그인 함수 수정
 async function login() {
     const name = document.getElementById('nameInput').value;
     const code = document.getElementById('codeInput').value;
@@ -301,6 +302,9 @@ async function login() {
             availableDays: userData.availableDays || []
         };
 
+        // 로컬 스토리지에 사용자 정보 저장
+        localStorage.setItem('userData', JSON.stringify(currentUser));
+
         // UI 업데이트
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('mainContainer').style.display = 'block';
@@ -317,8 +321,58 @@ async function login() {
     }
 }
 
+// 페이지 로드 시 세션 복원 함수 추가
+function checkSavedSession() {
+    const savedUserData = localStorage.getItem('userData');
+    
+    if (savedUserData) {
+        try {
+            currentUser = JSON.parse(savedUserData);
 
-       function logout() {
+            // UI 업데이트
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('userDisplay').textContent = `${currentUser.name}님 환영합니다`;
+            document.getElementById('modalNameInput').value = currentUser.name;
+
+            generateCalendar();
+            loadUserReservation();
+        } catch (error) {
+            console.error('세션 복원 에러:', error);
+            localStorage.removeItem('userData');
+        }
+    }
+}
+
+// 로그아웃 함수 수정
+function checkSavedSession() {
+    const savedUserData = localStorage.getItem('userData');
+    
+    if (savedUserData) {
+        try {
+            currentUser = JSON.parse(savedUserData);
+
+            // UI 업데이트
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('userDisplay').textContent = `${currentUser.name}님 환영합니다`;
+            document.getElementById('modalNameInput').value = currentUser.name;
+
+            generateCalendar();
+            loadUserReservation();
+        } catch (error) {
+            console.error('세션 복원 에러:', error);
+            localStorage.removeItem('userData');
+        }
+    }
+}
+
+// 로그아웃 함수 수정
+function logout() {
+    // 로컬 스토리지 초기화
+    localStorage.removeItem('userData');
+    
+    // 기존 로그아웃 로직
     currentUser = null;
     document.getElementById('loginForm').style.display = 'block';
     document.getElementById('mainContainer').style.display = 'none';
@@ -326,6 +380,9 @@ async function login() {
     document.getElementById('codeInput').value = '';
     document.getElementById('errorMessage').textContent = '';
 }
+
+// 페이지 로드 시 세션 복원 시도
+document.addEventListener('DOMContentLoaded', checkSavedSession);
 
 // 페이지 로드 시 세션 복원 시도
 document.addEventListener('DOMContentLoaded', checkSavedSession);
