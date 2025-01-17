@@ -496,9 +496,11 @@ function generateCalendar() {
     }
 }
 
-
 function selectDate(day) {
     document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
+    
+    // 날짜 선택 시 selected 클래스 추가 (기존 로직)
+    document.querySelectorAll('.day')[day + getFirstDayOffset() - 1].classList.add('selected');
     
     // 2월과 3월 처리
     let month = 2; // 기본값은 2월
@@ -508,8 +510,6 @@ function selectDate(day) {
         month = 3; // 29일 이상이면 3월로 처리
         adjustedDay = day - 28; // 3월 날짜 조정
     }
-    
-    document.querySelectorAll('.day')[day + getFirstDayOffset() - 1].classList.add('selected');
     
     // selectedDate 형식을 YYYY-MM-DD로 수정
     selectedDate = `2025-${month < 10 ? '0' : ''}${month}-${adjustedDay < 10 ? '0' : ''}${adjustedDay}`;
