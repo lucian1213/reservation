@@ -566,18 +566,25 @@ async function makeReservation() {
 // 로그인 후 사용자의 예약 정보를 불러오는 함수 추가
 async function loadUserReservation() {
     try {
+        // 현재 사용자 ID로 예약 조회
         const reservationSnapshot = await db.collection('reservations')
             .where('userId', '==', currentUser.id)
             .get();
 
+        // 예약 정보를 표시할 div 요소
+        const reservationInfoDiv = document.getElementById('reservationInfo');
+        
+        // 예약이 없는 경우
         if (reservationSnapshot.empty) {
-            document.getElementById('reservationInfo').innerHTML = '현재 예약된 내역이 없습니다.';
+            reservationInfoDiv.innerHTML = '현재 예약된 내역이 없습니다.';
             return;
         }
 
+        // 첫 번째 예약 문서 가져오기 (사용자당 하나의 예약만 있다고 가정)
         const reservation = reservationSnapshot.docs[0].data();
-        
-        // 예약 상태에 따라 버튼 스타일 및 텍스트 변경
+        const reservationId = reservationSnapshot.docs[0].id;
+
+        // 예약 상태에 따라 버튼 스타일 및 텍스트 결정
         const buttonText = reservation.status === 'confirmed' 
             ? '예약 확정' 
             : '예약 취소';
@@ -586,17 +593,25 @@ async function loadUserReservation() {
             ? 'btn btn-danger' 
             : 'btn btn-delete';
 
-        document.getElementById('reservationInfo').innerHTML = `
+        // 예약 정보 HTML 생성
+        reservationInfoDiv.innerHTML = `
             <h3>나의 예약 정보</h3>
             <p>날짜: ${reservation.date}</p>
             <p>시간: ${reservation.time}</p>
             <p>연락처: ${reservation.phone}</p>
-            <button class="${buttonClass}" onclick="${reservation.status === 'confirmed' ? 'return false;' : 'cancelReservation(\'' + reservationSnapshot.docs[0].id + '\')'}">
+            <button 
+                class="${buttonClass}" 
+                ${reservation.status === 'confirmed' ? 'disabled' : ''} 
+                onclick="${reservation.status === 'confirmed' ? 'return false;' : 'cancelReservation(\'' + reservationId + '\')'}">
                 ${buttonText}
             </button>
         `;
+
+        console.log('예약 정보:', reservation); // 디버깅용 로그
     } catch (error) {
-        console.error('Error loading reservation:', error);
+        console.error('예약 로드 중 오류:', error);
+        const reservationInfoDiv = document.getElementById('reservationInfo');
+        reservationInfoDiv.innerHTML = '예약 정보를 불러오는 중 오류가 발생했습니다.';
     }
 }
 // 예약 취소 함수 추가
