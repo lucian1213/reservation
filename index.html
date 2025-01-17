@@ -435,42 +435,52 @@ document.addEventListener('DOMContentLoaded', checkSavedSession);
 document.addEventListener('DOMContentLoaded', checkSavedSession);
 
         function generateCalendar() {
-            const calendar = document.querySelector('.calendar');
-            // 2025년 2월 1일의 요일
-            const firstDay = new Date(2025, 1, 1).getDay();
-            
-            // 이전 내용 지우기
-            while (calendar.children.length > 7) {
-                calendar.removeChild(calendar.lastChild);
-            }
-            
-            // 첫째 날 이전의 빈 칸 추가
-            for (let i = 0; i < firstDay; i++) {
-                const emptyDay = document.createElement('div');
-                emptyDay.className = 'day';
-                calendar.appendChild(emptyDay);
-            }
-            
-            // 2월은 28일까지
-            for (let i = 1; i <= 28; i++) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'day';
-                dayElement.textContent = i;
-                dayElement.onclick = () => selectDate(i);
-                calendar.appendChild(dayElement);
-            }
-        }
+    const calendar = document.querySelector('.calendar');
+    // 2025년 2월 1일의 요일
+    const firstDay = new Date(2025, 1, 1).getDay();
+    
+    // 이전 내용 지우기
+    while (calendar.children.length > 7) {
+        calendar.removeChild(calendar.lastChild);
+    }
+    
+    // 첫째 날 이전의 빈 칸 추가
+    for (let i = 0; i < firstDay; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'day';
+        calendar.appendChild(emptyDay);
+    }
+    
+    // 2월은 28일까지, 3월 1일과 2일 추가
+    for (let i = 1; i <= 30; i++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'day';
+        dayElement.textContent = i;
+        dayElement.onclick = () => selectDate(i);
+        calendar.appendChild(dayElement);
+    }
+}
 
-        function selectDate(day) {
-            document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
-            document.querySelectorAll('.day')[day + getFirstDayOffset() - 1].classList.add('selected');
-            selectedDate = day;
-            showTimeSlots();
-        }
+function selectDate(day) {
+    document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
+    
+    // 2월과 3월 처리
+    let month = 2; // 기본값은 2월
+    let adjustedDay = day;
+    
+    if (day > 28) {
+        month = 3; // 29일 이상이면 3월로 처리
+        adjustedDay = day - 28; // 3월 날짜 조정
+    }
+    
+    document.querySelectorAll('.day')[day + getFirstDayOffset() - 1].classList.add('selected');
+    selectedDate = `${month < 10 ? '0' : ''}${month}-${adjustedDay < 10 ? '0' : ''}${adjustedDay}`;
+    showTimeSlots();
+}
 
-        function getFirstDayOffset() {
-            return new Date(2025, 1, 1).getDay();
-        }
+function getFirstDayOffset() {
+    return new Date(2025, 1, 1).getDay();
+}
 
 async function showTimeSlots() {
     const timeSection = document.querySelector('.time-section');
@@ -478,10 +488,13 @@ async function showTimeSlots() {
     const timeSlotsDiv = document.querySelector('.time-slots');
     timeSlotsDiv.innerHTML = '';
 
-    const dateKey = `2025-02-${selectedDate}`;
-    const selectedDateObj = new Date(2025, 1, selectedDate);
+    const dateKey = `2025-${selectedDate}`; // 수정된 날짜 형식
+    const selectedDateObj = new Date(2025, parseInt(selectedDate.split('-')[0]) - 1, parseInt(selectedDate.split('-')[1]));
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     const selectedDay = days[selectedDateObj.getDay()];
+    
+    // 이하 기존 로직 동일...
+}
     
     // 날짜 차단 확인
     const blockedDateSnapshot = await db.collection('reservation_blocks')
