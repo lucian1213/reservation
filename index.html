@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', checkSavedSession);
 // 페이지 로드 시 세션 복원 시도
 document.addEventListener('DOMContentLoaded', checkSavedSession);
 
-        function generateCalendar() {
+function generateCalendar() {
     const calendar = document.querySelector('.calendar');
     // 2025년 2월 1일의 요일
     const firstDay = new Date(2025, 1, 1).getDay();
@@ -460,6 +460,7 @@ document.addEventListener('DOMContentLoaded', checkSavedSession);
         calendar.appendChild(dayElement);
     }
 }
+
 
 function selectDate(day) {
     document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
@@ -493,9 +494,6 @@ async function showTimeSlots() {
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     const selectedDay = days[selectedDateObj.getDay()];
     
-    // 이하 기존 로직 동일...
-}
-    
     // 날짜 차단 확인
     const blockedDateSnapshot = await db.collection('reservation_blocks')
         .where('date', '==', dateKey)
@@ -515,7 +513,6 @@ async function showTimeSlots() {
         // 날짜 차단 체크
         if (isDateBlocked) {
             slot.classList.add('disabled');
-            slot.textContent = `${time} (예약 불가)`;
             continue;
         }
 
