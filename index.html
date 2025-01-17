@@ -234,29 +234,6 @@
     color: white;
     cursor: not-allowed;
 }
-        .march-calendar {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 5px;
-    margin-bottom: 20px;
-}
-
-.march-calendar .day {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: center;
-    cursor: pointer;
-    background: white;
-}
-
-.march-calendar .day:hover {
-    background: #f0f0f0;
-}
-
-.march-calendar .day.selected {
-    background: #007bff;
-    color: white;
-}
     </style>
 </head>
 <body>
@@ -284,27 +261,24 @@
         </div>
 
         <!-- 캘린더 컨테이너 -->
-       <div class="calendar-container">
-    <div class="calendar-header">
-        <h2>2025년 2월 예약</h2>
-    </div>
-    <div class="calendar">
-        <div class="weekday">일</div>
-        <div class="weekday">월</div>
-        <div class="weekday">화</div>
-        <div class="weekday">수</div>
-        <div class="weekday">목</div>
-        <div class="weekday">금</div>
-        <div class="weekday">토</div>
-    </div>
-    
-
-
-    <div class="time-section" style="display: none;">
-        <div class="time-section-header">예약 가능 시간</div>
-        <div class="time-slots"></div>
-    </div>
-</div>
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <h2>2025년 2월 예약</h2>
+            </div>
+            <div class="calendar">
+                <div class="weekday">일</div>
+                <div class="weekday">월</div>
+                <div class="weekday">화</div>
+                <div class="weekday">수</div>
+                <div class="weekday">목</div>
+                <div class="weekday">금</div>
+                <div class="weekday">토</div>
+            </div>
+            <div class="time-section" style="display: none;">
+                <div class="time-section-header">예약 가능 시간</div>
+                <div class="time-slots"></div>
+            </div>
+        </div>
 
         <div id="reservationInfo" class="reservation-info">
     <!-- 예약 정보가 여기에 동적으로 표시됩니다 -->
@@ -375,6 +349,9 @@ async function login() {
             availableDays: userData.availableDays || []
         };
 
+        // 로컬 스토리지에 사용자 정보 저장
+        localStorage.setItem('userData', JSON.stringify(currentUser));
+
         // UI 업데이트
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('mainContainer').style.display = 'block';
@@ -382,13 +359,7 @@ async function login() {
         document.getElementById('modalNameInput').value = name;
 
         generateCalendar();
-        
-        // loadUserReservation 함수 호출
-        if (typeof loadUserReservation === 'function') {
-            loadUserReservation();
-        } else {
-            console.error('loadUserReservation 함수가 정의되지 않았습니다.');
-        }
+        loadUserReservation();
 
     } catch (error) {
         console.error('로그인 에러:', error);
@@ -463,65 +434,43 @@ document.addEventListener('DOMContentLoaded', checkSavedSession);
 // 페이지 로드 시 세션 복원 시도
 document.addEventListener('DOMContentLoaded', checkSavedSession);
 
-function generateCalendar() {
-    const calendar = document.querySelector('.calendar');
-    // 2025년 2월 1일의 요일
-    const firstDay = new Date(2025, 1, 1).getDay();
-    
-    // 이전 내용 지우기
-    while (calendar.children.length > 7) {
-        calendar.removeChild(calendar.lastChild);
-    }
-    
-    // 첫째 날 이전의 빈 칸 추가
-    for (let i = 0; i < firstDay; i++) {
-        const emptyDay = document.createElement('div');
-        emptyDay.className = 'day';
-        calendar.appendChild(emptyDay);
-    }
-    
-    // 2월은 28일까지, 3월 1일과 2일 추가
-    for (let i = 1; i <= 30; i++) {
-        const dayElement = document.createElement('div');
-        dayElement.className = 'day';
-        
-        // 29, 30일을 3/1, 3/2로 표기
-        if (i === 29) {
-            dayElement.textContent = '3/1';
-        } else if (i === 30) {
-            dayElement.textContent = '3/2';
-        } else {
-            dayElement.textContent = i;
+        function generateCalendar() {
+            const calendar = document.querySelector('.calendar');
+            // 2025년 2월 1일의 요일
+            const firstDay = new Date(2025, 1, 1).getDay();
+            
+            // 이전 내용 지우기
+            while (calendar.children.length > 7) {
+                calendar.removeChild(calendar.lastChild);
+            }
+            
+            // 첫째 날 이전의 빈 칸 추가
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'day';
+                calendar.appendChild(emptyDay);
+            }
+            
+            // 2월은 28일까지
+            for (let i = 1; i <= 28; i++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'day';
+                dayElement.textContent = i;
+                dayElement.onclick = () => selectDate(i);
+                calendar.appendChild(dayElement);
+            }
         }
-        
-        dayElement.onclick = () => selectDate(i);
-        calendar.appendChild(dayElement);
-    }
-}
 
-function selectDate(day) {
-    document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
-    
-    // 날짜 선택 시 selected 클래스 추가 (기존 로직)
-    document.querySelectorAll('.day')[day + getFirstDayOffset() - 1].classList.add('selected');
-    
-    // 2월과 3월 처리
-    let month = 2; // 기본값은 2월
-    let adjustedDay = day;
-    
-    if (day > 28) {
-        month = 3; // 29일 이상이면 3월로 처리
-        adjustedDay = day - 28; // 3월 날짜 조정
-    }
-    
-    // selectedDate 형식을 YYYY-MM-DD로 수정
-    selectedDate = `2025-${month < 10 ? '0' : ''}${month}-${adjustedDay < 10 ? '0' : ''}${adjustedDay}`;
-    
-    showTimeSlots();
-}
-function getFirstDayOffset() {
-    return new Date(2025, 1, 1).getDay();
-}
+        function selectDate(day) {
+            document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
+            document.querySelectorAll('.day')[day + getFirstDayOffset() - 1].classList.add('selected');
+            selectedDate = day;
+            showTimeSlots();
+        }
+
+        function getFirstDayOffset() {
+            return new Date(2025, 1, 1).getDay();
+        }
 
 async function showTimeSlots() {
     const timeSection = document.querySelector('.time-section');
@@ -529,8 +478,8 @@ async function showTimeSlots() {
     const timeSlotsDiv = document.querySelector('.time-slots');
     timeSlotsDiv.innerHTML = '';
 
-    const dateKey = `2025-${selectedDate}`; // 수정된 날짜 형식
-    const selectedDateObj = new Date(2025, parseInt(selectedDate.split('-')[0]) - 1, parseInt(selectedDate.split('-')[1]));
+    const dateKey = `2025-02-${selectedDate}`;
+    const selectedDateObj = new Date(2025, 1, selectedDate);
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     const selectedDay = days[selectedDateObj.getDay()];
     
@@ -553,6 +502,7 @@ async function showTimeSlots() {
         // 날짜 차단 체크
         if (isDateBlocked) {
             slot.classList.add('disabled');
+            slot.textContent = `${time} (예약 불가)`;
             continue;
         }
 
@@ -656,24 +606,22 @@ async function makeReservation() {
 
 // 로그인 후 사용자의 예약 정보를 불러오는 함수 추가
 async function loadUserReservation() {
-    // currentUser가 정의되어 있는지 먼저 확인
-    if (!currentUser) {
-        console.error('현재 사용자 정보 없음');
-        return;
-    }
-
     try {
+        // 현재 사용자 ID로 예약 조회
         const reservationSnapshot = await db.collection('reservations')
             .where('userId', '==', currentUser.id)
             .get();
 
+        // 예약 정보를 표시할 div 요소
         const reservationInfoDiv = document.getElementById('reservationInfo');
         
+        // 예약이 없는 경우
         if (reservationSnapshot.empty) {
             reservationInfoDiv.innerHTML = '현재 예약된 내역이 없습니다.';
             return;
         }
 
+        // 첫 번째 예약 문서 가져오기 (사용자당 하나의 예약만 있다고 가정)
         const reservation = reservationSnapshot.docs[0].data();
         const reservationId = reservationSnapshot.docs[0].id;
 
@@ -699,28 +647,13 @@ async function loadUserReservation() {
                 ${buttonText}
             </button>
         `;
+
+        console.log('예약 정보:', reservation); // 디버깅용 로그
     } catch (error) {
         console.error('예약 로드 중 오류:', error);
         const reservationInfoDiv = document.getElementById('reservationInfo');
         reservationInfoDiv.innerHTML = '예약 정보를 불러오는 중 오류가 발생했습니다.';
     }
-}
-
-function updateStats() {
-    console.log('updateStats 호출됨, 전체 예약 수:', allReservations.length);
-    
-    document.getElementById('totalReservations').textContent = allReservations.length;
-    
-    // 오늘의 예약
-    const today = new Date().toISOString().split('T')[0];
-    const todayReservations = allReservations.filter(r => r.date === `2025-02-${today.slice(-2)}`);
-    document.getElementById('todayReservations').textContent = todayReservations.length;
-    
-    // 이번 주 예약
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekReservations = allReservations.filter(r => new Date(r.date) >= weekAgo);
-    document.getElementById('weekReservations').textContent = weekReservations.length;
 }
 // 예약 취소 함수 추가
 async function cancelReservation(reservationId) {
