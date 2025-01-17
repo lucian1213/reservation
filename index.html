@@ -375,9 +375,6 @@ async function login() {
             availableDays: userData.availableDays || []
         };
 
-        // 로컬 스토리지에 사용자 정보 저장
-        localStorage.setItem('userData', JSON.stringify(currentUser));
-
         // UI 업데이트
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('mainContainer').style.display = 'block';
@@ -385,7 +382,13 @@ async function login() {
         document.getElementById('modalNameInput').value = name;
 
         generateCalendar();
-        loadUserReservation();
+        
+        // loadUserReservation 함수 호출
+        if (typeof loadUserReservation === 'function') {
+            loadUserReservation();
+        } else {
+            console.error('loadUserReservation 함수가 정의되지 않았습니다.');
+        }
 
     } catch (error) {
         console.error('로그인 에러:', error);
@@ -653,6 +656,12 @@ async function makeReservation() {
 
 // 로그인 후 사용자의 예약 정보를 불러오는 함수 추가
 async function loadUserReservation() {
+    // currentUser가 정의되어 있는지 먼저 확인
+    if (!currentUser) {
+        console.error('현재 사용자 정보 없음');
+        return;
+    }
+
     try {
         const reservationSnapshot = await db.collection('reservations')
             .where('userId', '==', currentUser.id)
