@@ -559,18 +559,6 @@ async function makeReservation() {
 
 // 로그인 후 사용자의 예약 정보를 불러오는 함수 추가
 async function loadUserReservation() {
-    const reservationInfoDiv = document.getElementById('reservationInfo');
-    if (!reservationInfoDiv) {
-        // 예약 정보를 표시할 div 생성
-        const newDiv = document.createElement('div');
-        newDiv.id = 'reservationInfo';
-        newDiv.style.marginTop = '20px';
-        newDiv.style.padding = '15px';
-        newDiv.style.background = '#f8f9fa';
-        newDiv.style.borderRadius = '8px';
-        document.querySelector('.calendar-container').appendChild(newDiv);
-    }
-
     try {
         const reservationSnapshot = await db.collection('reservations')
             .where('userId', '==', currentUser.id)
@@ -582,18 +570,29 @@ async function loadUserReservation() {
         }
 
         const reservation = reservationSnapshot.docs[0].data();
+        
+        // 예약 상태에 따라 버튼 스타일 및 텍스트 변경
+        const buttonText = reservation.status === 'confirmed' 
+            ? '예약 확정' 
+            : '예약 취소';
+        
+        const buttonClass = reservation.status === 'confirmed'
+            ? 'btn btn-danger' 
+            : 'btn btn-delete';
+
         document.getElementById('reservationInfo').innerHTML = `
             <h3>나의 예약 정보</h3>
             <p>날짜: ${reservation.date}</p>
             <p>시간: ${reservation.time}</p>
             <p>연락처: ${reservation.phone}</p>
-            <button class="btn" onclick="cancelReservation('${reservationSnapshot.docs[0].id}')">예약 취소</button>
+            <button class="${buttonClass}" onclick="${reservation.status === 'confirmed' ? 'return false;' : 'cancelReservation(\'' + reservationSnapshot.docs[0].id + '\')'}">
+                ${buttonText}
+            </button>
         `;
     } catch (error) {
         console.error('Error loading reservation:', error);
     }
 }
-
 // 예약 취소 함수 추가
 async function cancelReservation(reservationId) {
     try {
@@ -615,7 +614,6 @@ async function cancelReservation(reservationId) {
         alert('예약 취소 중 오류가 발생했습니다.');
     }
 }
-
 
     </script>
 </body>
