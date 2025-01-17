@@ -652,55 +652,51 @@ async function makeReservation() {
 }
 
 // 로그인 후 사용자의 예약 정보를 불러오는 함수 추가
-async function loadUserReservation() {
+async function loadReservations() {
     try {
-        // 현재 사용자 ID로 예약 조회
-        const reservationSnapshot = await db.collection('reservations')
-            .where('userId', '==', currentUser.id)
-            .get();
-
-        // 예약 정보를 표시할 div 요소
-        const reservationInfoDiv = document.getElementById('reservationInfo');
+        console.log('loadReservations 함수 호출됨');
         
-        // 예약이 없는 경우
-        if (reservationSnapshot.empty) {
-            reservationInfoDiv.innerHTML = '현재 예약된 내역이 없습니다.';
-            return;
-        }
-
-        // 첫 번째 예약 문서 가져오기 (사용자당 하나의 예약만 있다고 가정)
-        const reservation = reservationSnapshot.docs[0].data();
-        const reservationId = reservationSnapshot.docs[0].id;
-
-        // 예약 상태에 따라 버튼 스타일 및 텍스트 결정
-        const buttonText = reservation.status === 'confirmed' 
-            ? '예약 확정' 
-            : '예약 취소';
+        const snapshot = await db.collection('reservations').get();
         
-        const buttonClass = reservation.status === 'confirmed'
-            ? 'btn btn-danger' 
-            : 'btn btn-delete';
+        console.log('불러온 예약 수:', snapshot.size);
+        
+        allReservations = [];
+        snapshot.forEach((doc) => {
+            const reservationData = doc.data();
+            
+            console.log('개별 예약 데이터:', reservationData);
+            
+            allReservations.push({
+                id: doc.id,
+                ...reservationData
+            });
+        });
 
-        // 예약 정보 HTML 생성
-        reservationInfoDiv.innerHTML = `
-            <h3>나의 예약 정보</h3>
-            <p>날짜: ${reservation.date}</p>
-            <p>시간: ${reservation.time}</p>
-            <p>연락처: ${reservation.phone}</p>
-            <button 
-                class="${buttonClass}" 
-                ${reservation.status === 'confirmed' ? 'disabled' : ''} 
-                onclick="${reservation.status === 'confirmed' ? 'return false;' : 'cancelReservation(\'' + reservationId + '\')'}">
-                ${buttonText}
-            </button>
-        `;
-
-        console.log('예약 정보:', reservation); // 디버깅용 로그
+        console.log('전체 예약 목록:', allReservations);
+        
+        updateStats();
+        filterReservations();
     } catch (error) {
         console.error('예약 로드 중 오류:', error);
-        const reservationInfoDiv = document.getElementById('reservationInfo');
-        reservationInfoDiv.innerHTML = '예약 정보를 불러오는 중 오류가 발생했습니다.';
+        alert('예약 정보를 불러오는 중 오류가 발생했습니다.');
     }
+}
+
+function updateStats() {
+    console.log('updateStats 호출됨, 전체 예약 수:', allReservations.length);
+    
+    document.getElementById('totalReservations').textContent = allReservations.length;
+    
+    // 오늘의 예약
+    const today = new Date().toISOString().split('T')[0];
+    const todayReservations = allReservations.filter(r => r.date === `2025-02-${today.slice(-2)}`);
+    document.getElementById('todayReservations').textContent = todayReservations.length;
+    
+    // 이번 주 예약
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekReservations = allReservations.filter(r => new Date(r.date) >= weekAgo);
+    document.getElementById('weekReservations').textContent = weekReservations.length;
 }
 // 예약 취소 함수 추가
 async function cancelReservation(reservationId) {
