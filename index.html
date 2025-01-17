@@ -537,14 +537,15 @@ async function makeReservation() {
             return;
         }
 
-        await db.collection('reservations').add({
-            date: dateKey,
-            time: selectedTime,
-            name: currentUser.name,
-            phone: phone,
-            userId: currentUser.id,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+       await db.collection('reservations').add({
+    date: dateKey,
+    time: selectedTime,
+    name: currentUser.name,
+    phone: phone,
+    userId: currentUser.id,
+    status: 'pending', // 추가
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+});
 
         alert('예약이 완료되었습니다!');
         closeModal();
@@ -595,15 +596,22 @@ async function loadUserReservation() {
 
 // 예약 취소 함수 추가
 async function cancelReservation(reservationId) {
-    if (!confirm('예약을 취소하시겠습니까?')) return;
-
     try {
+        const reservationDoc = await db.collection('reservations').doc(reservationId).get();
+        const reservationData = reservationDoc.data();
+
+        // confirmed 상태일 경우 취소 불가
+        if (reservationData.status === 'confirmed') {
+            alert('이미 확정된 예약은 취소할 수 없습니다.');
+            return;
+        }
+
+        // pending 상태일 경우 취소 가능
         await db.collection('reservations').doc(reservationId).delete();
         alert('예약이 취소되었습니다.');
         loadUserReservation();
-        showTimeSlots();
     } catch (error) {
-        console.error('Error canceling reservation:', error);
+        console.error('예약 취소 중 오류:', error);
         alert('예약 취소 중 오류가 발생했습니다.');
     }
 }
