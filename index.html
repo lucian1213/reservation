@@ -587,10 +587,9 @@ async function showTimeSlots() {
 }
 
 function formatDate(date) {
-    // 10 미만의 날짜는 그대로, 10 이상의 날짜는 0으로 패딩
-    return date < 10 ? `${date}` : date.padStart(2, '0');
+    // 숫자를 문자열로 변환 후 패딩
+    return String(date).padStart(2, '0');
 }
-
 async function makeReservation() {
     const name = document.getElementById('reservationNameInput').value;
     const phone = document.getElementById('reservationPhoneInput').value;
