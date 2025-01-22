@@ -526,15 +526,14 @@ async function showTimeSlots() {
     const timeSlotsDiv = document.querySelector('.time-slots');
     timeSlotsDiv.innerHTML = '';
 
-    // 날짜 형식 수정 (1~9일은 그대로, 10일 이후는 패딩)
-    const dateKey = selectedDate < 10 
-        ? `2025-02-${selectedDate}` 
-        : `2025-02-${formatDate(selectedDate)}`;
+    const dateKey = `2025-02-${formatDate(selectedDate)}`;
     
-    // 날짜 차단 확인
+    // 날짜 차단 확인 (1~9일과 10일 이후 모두 처리)
     const blockedDateSnapshot = await db.collection('reservation_blocks')
         .where('date', '==', dateKey)
         .get();
+
+    console.log('차단된 날짜:', dateKey, blockedDateSnapshot.size);
 
     const isDateBlocked = !blockedDateSnapshot.empty;
     
@@ -546,22 +545,21 @@ async function showTimeSlots() {
         // 날짜 차단 체크
         if (isDateBlocked) {
             slot.classList.add('disabled');
-            continue;
-        }
-        
-        // 중복 예약 체크
-        const isBooked = await isTimeSlotBooked(dateKey, time);
-        if (isBooked) {
-            slot.classList.add('booked');
-            slot.textContent = `${time} (예약됨)`;
+            slot.textContent = `${time} (예약 불가)`;
         } else {
-            slot.onclick = () => showModal(time);
+            // 중복 예약 체크
+            const isBooked = await isTimeSlotBooked(dateKey, time);
+            if (isBooked) {
+                slot.classList.add('booked');
+                slot.textContent = `${time} (예약됨)`;
+            } else {
+                slot.onclick = () => showModal(time);
+            }
         }
         
         timeSlotsDiv.appendChild(slot);
     }
 }
-
 
         async function isTimeSlotBooked(date, time) {
             try {
@@ -589,7 +587,8 @@ async function showTimeSlots() {
 }
 
 function formatDate(date) {
-    return String(date).padStart(2, '0');
+    // 10 미만의 날짜는 그대로, 10 이상의 날짜는 0으로 패딩
+    return date < 10 ? `${date}` : String(date).padStart(2, '0');
 }
 async function makeReservation() {
     const name = document.getElementById('reservationNameInput').value;
