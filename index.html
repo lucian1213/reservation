@@ -504,8 +504,12 @@ async function showTimeSlots() {
     const timeSlotsDiv = document.querySelector('.time-slots');
     timeSlotsDiv.innerHTML = '';
 
-    const dateKey = `2025-02-${selectedDate}`;
-    const selectedDateObj = new Date(2025, 1, selectedDate);
+    const dateKey = `2025-02-${selectedDate < 10 ? '0' : ''}${selectedDate}`;
+    if (selectedDate > 28) {
+        dateKey = `2025-03-${selectedDate - 28 < 10 ? '0' : ''}${selectedDate - 28}`;
+    }
+
+    const selectedDateObj = new Date(2025, selectedDate > 28 ? 2 : 1, selectedDate > 28 ? selectedDate - 28 : selectedDate);
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     const selectedDay = days[selectedDateObj.getDay()];
     
@@ -513,13 +517,8 @@ async function showTimeSlots() {
     const blockedDateSnapshot = await db.collection('reservation_blocks')
         .where('date', '==', dateKey)
         .get();
-
     const isDateBlocked = !blockedDateSnapshot.empty;
     
-    const userDoc = await db.collection('users').doc(currentUser.id).get();
-    const userData = userDoc.data();
-    const availableDays = userData.availableDays || [];
-
     for (const time of timeSlots) {
         const slot = document.createElement('div');
         slot.className = 'time-slot';
@@ -528,25 +527,16 @@ async function showTimeSlots() {
         // 날짜 차단 체크
         if (isDateBlocked) {
             slot.classList.add('disabled');
-            slot.textContent = `${time} (예약 불가)`;
             continue;
         }
-
-        // 요일 제한 체크
-        if (!availableDays.includes(selectedDay)) {
-            slot.classList.add('disabled');
+        
+        // 중복 예약 체크
+        const isBooked = await isTimeSlotBooked(dateKey, time);
+        if (isBooked) {
+            slot.classList.add('booked');
+            slot.textContent = `${time} (예약됨)`;
         } else {
-            const isBooked = await isTimeSlotBooked(dateKey, time);
-            const isAllowed = currentUser.timeSlots.includes(time);
-            
-            if (isBooked) {
-                slot.classList.add('booked');
-                slot.textContent = `${time} (예약됨)`;
-            } else if (!isAllowed) {
-                slot.classList.add('disabled');
-            } else {
-                slot.onclick = () => showModal(time);
-            }
+            slot.onclick = () => showModal(time);
         }
         
         timeSlotsDiv.appendChild(slot);
