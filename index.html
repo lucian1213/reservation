@@ -504,10 +504,7 @@ async function showTimeSlots() {
     const timeSlotsDiv = document.querySelector('.time-slots');
     timeSlotsDiv.innerHTML = '';
 
-    const dateKey = `2025-02-${selectedDate < 10 ? '0' : ''}${selectedDate}`;
-    if (selectedDate > 28) {
-        dateKey = `2025-03-${selectedDate - 28 < 10 ? '0' : ''}${selectedDate - 28}`;
-    }
+   const dateKey = `2025-02-${selectedDate}`;
 
     const selectedDateObj = new Date(2025, selectedDate > 28 ? 2 : 1, selectedDate > 28 ? selectedDate - 28 : selectedDate);
     const days = ['일', '월', '화', '수', '목', '금', '토'];
