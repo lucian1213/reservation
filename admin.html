@@ -420,23 +420,35 @@ async function toggleReservationStatus() {
         alert('예약 상태 변경 중 오류가 발생했습니다.');
     }
 }
-        async function loadReservations() {
-            try {
-                const snapshot = await db.collection('reservations').get();
-                allReservations = [];
-                snapshot.forEach((doc) => {
-                    allReservations.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
-                updateStats();
-                filterReservations();
-            } catch (error) {
-                console.error('Error loading reservations:', error);
-                alert('예약 정보를 불러오는 중 오류가 발생했습니다.');
-            }
-        }
+async function loadReservations() {
+    try {
+        console.log('loadReservations 함수 호출됨');
+        
+        const snapshot = await db.collection('reservations').get();
+        
+        console.log('불러온 예약 수:', snapshot.size);
+        
+        allReservations = [];
+        snapshot.forEach((doc) => {
+            const reservationData = doc.data();
+            
+            console.log('개별 예약 데이터:', reservationData);
+            
+            allReservations.push({
+                id: doc.id,
+                ...reservationData
+            });
+        });
+
+        console.log('전체 예약 목록:', allReservations);
+        
+        updateStats();
+        filterReservations();
+    } catch (error) {
+        console.error('예약 로드 중 오류:', error);
+        alert('예약 정보를 불러오는 중 오류가 발생했습니다.');
+    }
+}
 
         function updateStats() {
             document.getElementById('totalReservations').textContent = allReservations.length;
