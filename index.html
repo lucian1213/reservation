@@ -526,16 +526,14 @@ async function showTimeSlots() {
     const timeSlotsDiv = document.querySelector('.time-slots');
     timeSlotsDiv.innerHTML = '';
 
-   const dateKey = `2025-02-${selectedDate}`;
-
-    const selectedDateObj = new Date(2025, selectedDate > 28 ? 2 : 1, selectedDate > 28 ? selectedDate - 28 : selectedDate);
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    const selectedDay = days[selectedDateObj.getDay()];
+    // 날짜 형식 표준화
+    const dateKey = `2025-02-${formatDate(selectedDate)}`;
     
     // 날짜 차단 확인
     const blockedDateSnapshot = await db.collection('reservation_blocks')
         .where('date', '==', dateKey)
         .get();
+
     const isDateBlocked = !blockedDateSnapshot.empty;
     
     for (const time of timeSlots) {
