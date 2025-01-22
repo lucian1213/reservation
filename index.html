@@ -589,17 +589,8 @@ async function makeReservation() {
             return;
         }
 
-        // 사용자의 기존 예약 확인
-        const existingReservationSnapshot = await db.collection('reservations')
-            .where('name', '==', name)
-            .where('phone', '==', phone)
-            .get();
-
-        if (!existingReservationSnapshot.empty) {
-            alert('이미 예약된 내역이 있습니다. 기존 예약을 취소 후 다시 시도해주세요.');
-            closeModal();
-            return;
-        }
+        // 고유한 사용자 ID 생성 (타임스탬프 + 랜덤 문자열)
+        const userId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
         // 예약 생성
         await db.collection('reservations').add({
@@ -607,6 +598,7 @@ async function makeReservation() {
             time: selectedTime,
             name: name,
             phone: phone,
+            userId: userId,
             status: 'pending',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -619,7 +611,6 @@ async function makeReservation() {
         alert('예약 중 오류가 발생했습니다.');
     }
 }
-
 // 로그인 후 사용자의 예약 정보를 불러오는 함수 추가
 async function loadUserReservation() {
     try {
