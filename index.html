@@ -300,6 +300,26 @@
         <div id="reservationInfo" class="reservation-info">
     <!-- 예약 정보가 여기에 동적으로 표시됩니다 -->
 </div>
+        <!-- 예약 확인 모달 추가 -->
+<div class="modal" id="checkReservationModal">
+    <div class="modal-content">
+        <h3>예약 확인</h3>
+        <div class="form-group">
+            <label>이름</label>
+            <input type="text" id="checkNameInput" required>
+        </div>
+        <div class="form-group">
+            <label>연락처</label>
+            <input type="tel" id="checkPhoneInput" required>
+        </div>
+        <button class="btn" onclick="checkReservation()">예약 조회</button>
+        <button class="btn" style="background: #6c757d;" onclick="closeCheckReservationModal()">취소</button>
+    </div>
+</div>
+
+        <div id="userReservationInfo" class="reservation-info">
+    <!-- 예약 정보가 여기에 동적으로 표시됩니다 -->
+</div>
 
         <!-- 예약 모달 -->
            <div class="modal" id="reservationModal">
@@ -697,6 +717,81 @@ async function cancelReservation(reservationId) {
         alert('예약 취소 중 오류가 발생했습니다.');
     }
 }
+
+        function showCheckReservationModal() {
+    document.getElementById('checkReservationModal').style.display = 'block';
+}
+
+function closeCheckReservationModal() {
+    document.getElementById('checkReservationModal').style.display = 'none';
+}
+
+async function checkReservation() {
+    const name = document.getElementById('checkNameInput').value;
+    const phone = document.getElementById('checkPhoneInput').value;
+
+    if (!name || !phone) {
+        alert('이름과 연락처를 모두 입력해주세요.');
+        return;
+    }
+
+    try {
+        const reservationSnapshot = await db.collection('reservations')
+            .where('name', '==', name)
+            .where('phone', '==', phone)
+            .get();
+
+        const userReservationInfoDiv = document.getElementById('userReservationInfo');
+
+        if (reservationSnapshot.empty) {
+            userReservationInfoDiv.innerHTML = '예약 내역이 없습니다.';
+            closeCheckReservationModal();
+            return;
+        }
+
+        const reservation = reservationSnapshot.docs[0].data();
+        const reservationId = reservationSnapshot.docs[0].id;
+
+        userReservationInfoDiv.innerHTML = `
+            <h3>나의 예약 정보</h3>
+            <p>날짜: ${reservation.date}</p>
+            <p>시간: ${reservation.time}</p>
+            <p>상태: ${reservation.status === 'confirmed' ? '확정' : '대기'}</p>
+            <button class="btn btn-delete" onclick="cancelUserReservation('${reservationId}')">예약 취소</button>
+        `;
+
+        closeCheckReservationModal();
+    } catch (error) {
+        console.error('예약 확인 중 오류:', error);
+        alert('예약 확인 중 오류가 발생했습니다.');
+    }
+}
+
+async function cancelUserReservation(reservationId) {
+    if (!confirm('예약을 취소하시겠습니까?')) return;
+
+    try {
+        await db.collection('reservations').doc(reservationId).delete();
+        alert('예약이 취소되었습니다.');
+        
+        // 예약 정보 초기화
+        document.getElementById('userReservationInfo').innerHTML = '';
+    } catch (error) {
+        console.error('예약 취소 중 오류:', error);
+        alert('예약 취소 중 오류가 발생했습니다.');
+    }
+}
+
+// 메인 페이지에 예약 확인 버튼 추가
+document.addEventListener('DOMContentLoaded', () => {
+    const checkButton = document.createElement('button');
+    checkButton.className = 'btn';
+    checkButton.textContent = '예약 확인';
+    checkButton.onclick = showCheckReservationModal;
+    
+    const calendarContainer = document.querySelector('.calendar-container');
+    calendarContainer.insertBefore(checkButton, calendarContainer.firstChild);
+});
 
     </script>
 </body>
