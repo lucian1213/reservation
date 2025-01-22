@@ -564,6 +564,11 @@ async function showTimeSlots() {
     document.getElementById('reservationPhoneInput').value = '';
 }
 
+function formatDate(date) {
+    // 10 미만의 날짜는 그대로, 10 이상의 날짜는 0으로 패딩
+    return date < 10 ? `${date}` : date.padStart(2, '0');
+}
+
 async function makeReservation() {
     const name = document.getElementById('reservationNameInput').value;
     const phone = document.getElementById('reservationPhoneInput').value;
@@ -581,20 +586,23 @@ async function makeReservation() {
             return;
         }
 
+        // 날짜 형식 표준화
+        const formattedDate = `2025-02-${formatDate(selectedDate)}`;
+
         // 중복 예약 체크
-        const isBooked = await isTimeSlotBooked(selectedDate, selectedTime);
+        const isBooked = await isTimeSlotBooked(formattedDate, selectedTime);
         if (isBooked) {
             alert('이미 예약된 시간입니다.');
             closeModal();
             return;
         }
 
-        // 고유한 사용자 ID 생성 (타임스탬프 + 랜덤 문자열)
+        // 고유한 사용자 ID 생성
         const userId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
         // 예약 생성
         await db.collection('reservations').add({
-            date: selectedDate,
+            date: formattedDate,
             time: selectedTime,
             name: name,
             phone: phone,
