@@ -526,8 +526,10 @@ async function showTimeSlots() {
     const timeSlotsDiv = document.querySelector('.time-slots');
     timeSlotsDiv.innerHTML = '';
 
-    // 날짜 형식 표준화
-    const dateKey = `2025-02-${formatDate(selectedDate)}`;
+    // 날짜 형식 수정 (1~9일은 그대로, 10일 이후는 패딩)
+    const dateKey = selectedDate < 10 
+        ? `2025-02-${selectedDate}` 
+        : `2025-02-${formatDate(selectedDate)}`;
     
     // 날짜 차단 확인
     const blockedDateSnapshot = await db.collection('reservation_blocks')
@@ -559,6 +561,8 @@ async function showTimeSlots() {
         timeSlotsDiv.appendChild(slot);
     }
 }
+
+
         async function isTimeSlotBooked(date, time) {
             try {
                 const reservationSnapshot = await db.collection('reservations')
@@ -585,7 +589,6 @@ async function showTimeSlots() {
 }
 
 function formatDate(date) {
-    // 숫자를 문자열로 변환 후 패딩
     return String(date).padStart(2, '0');
 }
 async function makeReservation() {
