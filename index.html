@@ -257,23 +257,19 @@
     background: #007bff;
     color: white;
 }
+        .reservation-notice {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 15px;
+    font-size: 0.9em;
+    color: #6c757d;
+    text-align: center;
+}
     </style>
 </head>
 <body>
-    <!-- 로그인 폼 -->
-    <div id="loginForm" class="login-container">
-        <h2>로그인</h2>
-        <div class="error-message" id="errorMessage"></div>
-        <div class="form-group">
-            <label>닉네임</label>
-            <input type="text" id="nameInput" required>
-        </div>
-        <div class="form-group">
-            <label>후원번호</label>
-            <input type="text" id="codeInput" required>
-        </div>
-        <button class="btn" onclick="login()">로그인</button>
-    </div>
 
     <!-- 메인 컨테이너 -->
     <div id="mainContainer" class="main-container">
@@ -297,15 +293,7 @@
         <div class="weekday">금</div>
         <div class="weekday">토</div>
     </div>
-    
-    <!-- 3월 1일, 2일 추가 -->
-    <div class="calendar-header" style="margin-top: 20px;">
-        <h2>2025년 3월 예약</h2>
-    </div>
-    <div class="calendar additional-days">
-        <div class="day" onclick="selectDate(29)">3/1(토)</div>
-        <div class="day" onclick="selectDate(30)">3/2(일)</div>
-    </div>
+
 
     <div class="time-section" style="display: none;">
         <div class="time-section-header">예약 가능 시간</div>
@@ -318,22 +306,29 @@
 </div>
 
         <!-- 예약 모달 -->
-        <div class="modal" id="reservationModal">
-            <div class="modal-content">
-                <h3>예약하기</h3>
-                <div class="form-group">
-                    <label>예약자 성함</label>
-                    <input type="text" id="modalNameInput" readonly>
-                </div>
-                <div class="form-group">
-                    <label>연락처</label>
-                    <input type="tel" id="phoneInput" required>
-                </div>
-                <button class="btn" onclick="makeReservation()">예약하기</button>
-                <button class="btn" style="background: #6c757d;" onclick="closeModal()">취소</button>
+           <div class="modal" id="reservationModal">
+        <div class="modal-content">
+            <h3>예약하기</h3>
+            <div class="form-group">
+                <label>예약자 성함</label>
+                <input type="text" id="reservationNameInput" required>
             </div>
+            <div class="form-group">
+                <label>연락처</label>
+                <input type="tel" id="reservationPhoneInput" required>
+            </div>
+            <button class="btn" onclick="makeReservation()">예약하기</button>
+
+                    <div class="reservation-notice">
+                <p>예약 완료 후 테마이용료 90,000원을 입금하시면, 다음날 1시에 확정됩니다.</p> 
+                <p>예금주명과 입금자명은 동일하게 해주셔야 확인이 가능합니다.</p>
+                <p>다음날 1시까지 확인이 안될시 예약은 자동으로 취소됩니다.</p>
+                <p>입금 계좌: 우리은행 1002533722161 예금주명 : 이기민</p>
+        </div>
+            <button class="btn" style="background: #6c757d;" onclick="closeModal()">취소</button>
         </div>
     </div>
+</div>
 
     <script>
         // Firebase 초기화
@@ -577,62 +572,65 @@ async function showTimeSlots() {
             document.getElementById('reservationModal').style.display = 'block';
         }
 
-        function closeModal() {
-            document.getElementById('reservationModal').style.display = 'none';
-            document.getElementById('phoneInput').value = '';
-        }
+       function closeModal() {
+    document.getElementById('reservationModal').style.display = 'none';
+    // 입력 필드 초기화
+    document.getElementById('reservationNameInput').value = '';
+    document.getElementById('reservationPhoneInput').value = '';
+}
 
 async function makeReservation() {
-    if (!currentUser) {
-        alert('로그인이 필요합니다.');
+    const name = document.getElementById('reservationNameInput').value;
+    const phone = document.getElementById('reservationPhoneInput').value;
+
+    // 입력 검증
+    if (!name || !phone) {
+        alert('이름과 연락처를 모두 입력해주세요.');
         return;
     }
-
-    const phone = document.getElementById('phoneInput').value;
-
-    if (!phone) {
-        alert('연락처를 입력해주세요.');
-        return;
-    }
-
-    const dateKey = `2025-02-${selectedDate}`;
 
     try {
-        // 사용자의 기존 예약 확인
-        const existingReservationSnapshot = await db.collection('reservations')
-            .where('userId', '==', currentUser.id)
-            .get();
-
-        if (!existingReservationSnapshot.empty) {
-            alert('이미 예약된 내역이 있습니다. 기존 예약을 취소 후 다시 시도해주세요.');
+        // 날짜와 시간 확인
+        if (!selectedDate || !selectedTime) {
+            alert('날짜와 시간을 선택해주세요.');
             return;
         }
 
         // 중복 예약 체크
-        const isBooked = await isTimeSlotBooked(dateKey, selectedTime);
+        const isBooked = await isTimeSlotBooked(selectedDate, selectedTime);
         if (isBooked) {
             alert('이미 예약된 시간입니다.');
             closeModal();
-            showTimeSlots();
             return;
         }
 
-       await db.collection('reservations').add({
-    date: dateKey,
-    time: selectedTime,
-    name: currentUser.name,
-    phone: phone,
-    userId: currentUser.id,
-    status: 'pending', // 추가
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-});
+        // 사용자의 기존 예약 확인
+        const existingReservationSnapshot = await db.collection('reservations')
+            .where('name', '==', name)
+            .where('phone', '==', phone)
+            .get();
+
+        if (!existingReservationSnapshot.empty) {
+            alert('이미 예약된 내역이 있습니다. 기존 예약을 취소 후 다시 시도해주세요.');
+            closeModal();
+            return;
+        }
+
+        // 예약 생성
+        await db.collection('reservations').add({
+            date: selectedDate,
+            time: selectedTime,
+            name: name,
+            phone: phone,
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
         alert('예약이 완료되었습니다!');
         closeModal();
         showTimeSlots();
-        loadUserReservation(); // 새로 추가할 함수
     } catch (error) {
-        console.error('Error:', error);
+        console.error('예약 중 오류:', error);
         alert('예약 중 오류가 발생했습니다.');
     }
 }
@@ -679,6 +677,12 @@ async function loadUserReservation() {
                 onclick="${reservation.status === 'confirmed' ? 'return false;' : 'cancelReservation(\'' + reservationId + '\')'}">
                 ${buttonText}
             </button>
+                        <div class="reservation-notice">
+                <p>예약 완료 후 테마이용료 90,000원을 입금하시면, 다음날 1시에 확정됩니다.</p> 
+                <p>예금주명과 입금자명은 동일하게 해주셔야 확인이 가능합니다.</p>
+                <p>다음날 1시까지 확인이 안될시 예약은 자동으로 취소됩니다.</p>
+                <p>입금 계좌: 우리은행 1002533722161 예금주명 : 이기민</p>
+            </div>
         `;
 
         console.log('예약 정보:', reservation); // 디버깅용 로그
