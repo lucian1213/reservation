@@ -340,6 +340,8 @@
                 <p>예금주명과 입금자명은 동일하게 해주셔야 확인이 가능합니다.</p>
                 <p>다음날 1시까지 확인이 안될시 예약은 자동으로 취소됩니다.</p>
                 <p>입금 계좌: 우리은행 1002533722161 예금주명 : 이기민</p>
+                <p>(위 내용은 예약 후, 예약확인화면에서도 확인가능합니다.)</p>        
+                        
         </div>
             <button class="btn" style="background: #6c757d;" onclick="closeModal()">취소</button>
         </div>
@@ -758,6 +760,12 @@ async function checkReservation() {
             <p>시간: ${reservation.time}</p>
             <p>상태: ${reservation.status === 'confirmed' ? '확정' : '대기'}</p>
             <button class="btn btn-delete" onclick="cancelUserReservation('${reservationId}')">예약 취소</button>
+
+               <div class="reservation-notice">
+                <p>예약 완료 후 테마이용료 90,000원을 입금하시면, 다음날 1시에 확정됩니다.</p> 
+                <p>예금주명과 입금자명은 동일하게 해주셔야 확인이 가능합니다.</p>
+                <p>다음날 1시까지 확인이 안될시 예약은 자동으로 취소됩니다.</p>
+                <p>입금 계좌: 우리은행 1002533722161 예금주명 : 이기민</p>
         `;
 
         closeCheckReservationModal();
