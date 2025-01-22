@@ -458,32 +458,34 @@ document.addEventListener('DOMContentLoaded', checkSavedSession);
 // 페이지 로드 시 세션 복원 시도
 document.addEventListener('DOMContentLoaded', checkSavedSession);
 
-        function generateCalendar() {
-            const calendar = document.querySelector('.calendar');
-            // 2025년 2월 1일의 요일
-            const firstDay = new Date(2025, 1, 1).getDay();
-            
-            // 이전 내용 지우기
-            while (calendar.children.length > 7) {
-                calendar.removeChild(calendar.lastChild);
-            }
-            
-            // 첫째 날 이전의 빈 칸 추가
-            for (let i = 0; i < firstDay; i++) {
-                const emptyDay = document.createElement('div');
-                emptyDay.className = 'day';
-                calendar.appendChild(emptyDay);
-            }
-            
-            // 2월은 28일까지
-            for (let i = 1; i <= 28; i++) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'day';
-                dayElement.textContent = i;
-                dayElement.onclick = () => selectDate(i);
-                calendar.appendChild(dayElement);
-            }
-        }
+function generateCalendar() {
+    const calendar = document.querySelector('.calendar');
+    // 2025년 2월 1일의 요일
+    const firstDay = new Date(2025, 1, 1).getDay();
+    
+    // 이전 내용 지우기
+    while (calendar.children.length > 7) {
+        calendar.removeChild(calendar.lastChild);
+    }
+    
+    // 첫째 날 이전의 빈 칸 추가
+    for (let i = 0; i < firstDay; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'day';
+        calendar.appendChild(emptyDay);
+    }
+    
+    // 2월은 28일까지 추가
+    for (let i = 1; i <= 28; i++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'day';
+        dayElement.textContent = i;
+        dayElement.onclick = () => selectDate(i);
+        calendar.appendChild(dayElement);
+    }
+}
+
+        document.addEventListener('DOMContentLoaded', generateCalendar);
 
         function selectDate(day) {
             document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
