@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025년 2월 예약 시스템</title>
+    <title>양심의 기생 2월 예약</title>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -290,21 +290,22 @@
         <div class="weekday">토</div>
     </div>
 
+                            <div class="reservation-notice">
+                <p>예약 완료 후 테마이용료 90,000원을 입금하시면, 다음날 1시에 확정됩니다.</p> 
+                <p>예금주명과 입금자명은 동일하게 해주셔야 확인이 가능합니다.</p>
+                <p>다음날 1시까지 확인이 안될시 예약은 자동으로 취소됩니다.</p>
+                <p>예약이 확정되기 전까지는 예약 취소 및 시간변경이 가능합니다.</p>            
+                <p>입금 계좌: 우리은행 1002533722161 예금주명 : 이기민</p>
+
 
     <div class="time-section" style="display: none;">
         <div class="time-section-header">예약 가능 시간</div>
         <div class="time-slots"></div>
     </div>
-                        <div class="reservation-notice">
-                <p>예약 완료 후 테마이용료 90,000원을 입금하시면, 다음날 1시에 확정됩니다.</p> 
-                <p>예금주명과 입금자명은 동일하게 해주셔야 확인이 가능합니다.</p>
-                <p>다음날 1시까지 확인이 안될시 예약은 자동으로 취소됩니다.</p>
-                <p>입금 계좌: 우리은행 1002533722161 예금주명 : 이기민</p>
+
 </div>
 
-        <div id="reservationInfo" class="reservation-info">
-    <!-- 예약 정보가 여기에 동적으로 표시됩니다 -->
-</div>
+
         <!-- 예약 확인 모달 추가 -->
 <div class="modal" id="checkReservationModal">
     <div class="modal-content">
