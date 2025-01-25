@@ -289,6 +289,29 @@
         <div class="weekday">금</div>
         <div class="weekday">토</div>
     </div>
+        <div class="time-section" style="display: none;">
+        <div class="time-section-header">예약 가능 시간</div>
+        <div class="time-slots"></div>
+    </div>
+    <div class="modal" id="checkReservationModal">
+    <div class="modal-content">
+        <h3>예약 확인</h3>
+        <div class="form-group">
+            <label>이름</label>
+            <input type="text" id="checkNameInput" required>
+        </div>
+        <div class="form-group">
+            <label>연락처</label>
+            <input type="tel" id="checkPhoneInput" required>
+        </div>
+        <button class="btn" onclick="checkReservation()">예약 조회</button>
+        <button class="btn" style="background: #6c757d;" onclick="closeCheckReservationModal()">취소</button>
+    </div>
+</div>
+
+        <div id="userReservationInfo" class="reservation-info">
+    <!-- 예약 정보가 여기에 동적으로 표시됩니다 -->
+</div>
 
                             <div class="reservation-notice">
                 <p>예약 완료 후 테마이용료 90,000원을 입금하시면, 오후 1시에 예약이 확정됩니다.</p> 
@@ -299,10 +322,7 @@
                 <p>예금주명 : 이기민</p>
 
 
-    <div class="time-section" style="display: none;">
-        <div class="time-section-header">예약 가능 시간</div>
-        <div class="time-slots"></div>
-    </div>
+
 
 </div>
 
